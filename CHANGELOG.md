@@ -3,6 +3,21 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.1.0] - 2026-07-31
+
+### 新增
+
+- 後台設定頁（設定 → 效能強化）：所有參數皆可於後台調整，無需接觸 `wp-config.php`
+- 參數三層優先序：`wp-config.php` 常數 > 後台設定 > 預設值；已定義的常數會鎖定後台對應欄位
+- 作者頁收斂獨立開關（`PH_AUTHOR_HARDENING`）：控制作者頁 `noindex`、author feed 410
+  與 robots.txt 的 `/author/` 封鎖，供想保留作者頁曝光的站台關閉
+- 以一般外掛安裝的支援：啟用／停用時自動重建 rewrite rules；oEmbed 開關切換時亦自動重建
+- 同時以 mu-plugin 與一般外掛安裝時的重複載入保護
+
+### 變更
+
+- 設定讀取由常數改為 `ph_get()` 統一解析；既有以常數部署的站台行為不變
+
 ## [1.0.0] - 2026-07-31
 
 首次發布。由單一站台的實務調校整理為可跨站重用的版本，所有行為改由常數控制。

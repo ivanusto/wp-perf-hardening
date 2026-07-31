@@ -1,6 +1,6 @@
 # WordPress Performance Hardening
 
-一支 must-use plugin，用來收斂 WordPress 站台上最消耗資源的幾類請求：站內搜尋的全表掃描、封存頁的 `SQL_CALC_FOUND_ROWS`、低價值 Feed 與 oEmbed 端點，並為 CDN 提供正確的快取標頭。
+一支單檔外掛（可作為一般外掛或 must-use plugin 安裝），用來收斂 WordPress 站台上最消耗資源的幾類請求：站內搜尋的全表掃描、封存頁的 `SQL_CALC_FOUND_ROWS`、低價值 Feed 與 oEmbed 端點，並為 CDN 提供正確的快取標頭。
 
 適用情境為**內容量大、爬蟲流量高的站台**（新聞、媒體、內容聚合），特別是文章數上萬、標籤數逼近或超過文章數的站。
 
@@ -16,6 +16,16 @@
 
 ## 安裝
 
+### 方式 A：一般外掛（建議給需要後台調參的站台）
+
+1. 從 GitHub 下載 ZIP（Code → Download ZIP），或抓 [Releases](https://github.com/ivanusto/wp-perf-hardening/releases) 的外掛壓縮檔
+2. 後台「外掛 → 安裝外掛 → 上傳外掛」上傳並啟用
+3. 於「設定 → 效能強化」逐項調整參數
+
+啟用與停用時會自動重建 rewrite rules，無需手動 flush。
+
+### 方式 B：mu-plugin（建議給有主機權限、想確保外掛無法被後台停用的站台）
+
 ```bash
 # must-use plugin 無需啟用，放進去即生效
 sudo cp perf-hardening.php /var/www/html/wp-content/mu-plugins/
@@ -26,11 +36,19 @@ sudo php -l /var/www/html/wp-content/mu-plugins/perf-hardening.php
 sudo -u www-data wp rewrite flush --path=/var/www/html
 ```
 
-若站台使用頁面快取，請一併清除。
+mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種方式同時安裝時只有先載入的 mu-plugin 版生效。
+
+若站台使用頁面快取，安裝後請一併清除。
 
 ## 設定
 
-所有行為皆由常數控制，定義於 `wp-config.php` 中「That's all, stop editing!」註解之前。未定義者採用預設值。
+參數有三層優先序：
+
+1. **`wp-config.php` 常數**（最高）— 定義於「That's all, stop editing!」註解之前，適合用版本控管配置的站台；已定義的常數會鎖定後台對應欄位
+2. **後台「設定 → 效能強化」** — 存於 options，適合交給站台管理員自行調整
+3. **內建預設值**
+
+常數命名規則為 `PH_` + 下表鍵名大寫，例如後台的「作者頁收斂」對應 `PH_AUTHOR_HARDENING`。
 
 ### 功能開關
 
@@ -39,6 +57,7 @@ sudo -u www-data wp rewrite flush --path=/var/www/html
 | `PH_SEARCH_HARDENING` | `true` | 站內搜尋防護 |
 | `PH_ARCHIVE_HARDENING` | `true` | 封存頁查詢瘦身 |
 | `PH_CACHE_HEADERS` | `true` | 端點層級的快取與 robots 標頭 |
+| `PH_AUTHOR_HARDENING` | `true` | 作者頁收斂：作者頁 `noindex`、author feed 回 410、robots.txt 封鎖 `/author/`。想保留作者頁曝光的站台設為 `false` |
 | `PH_HEARTBEAT_TUNING` | `true` | Heartbeat 調頻 |
 | `PH_DISABLE_OEMBED` | `true` | 停用 oEmbed 端點與 `/embed/` 路由 |
 | `PH_DISABLE_XMLRPC` | `true` | 停用 XML-RPC 與 pingback |
@@ -122,7 +141,7 @@ curl -s -o /dev/null -w "%{time_total}\n" "$SITE/?s=keyword"
 # 主 Feed 應為 200
 curl -s -o /dev/null -D - "$SITE/feed/" | head -1
 
-# author feed 應為 410（PH_FEED_MODE 非 'cache' 時）
+# author feed 應為 410（Feed 策略非 'cache' 且作者頁收斂開啟時）
 curl -s -o /dev/null -D - "$SITE/author/admin/feed/" | head -1
 
 # robots.txt

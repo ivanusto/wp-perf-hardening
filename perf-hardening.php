@@ -4,15 +4,20 @@
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
  * Description:  收斂 WordPress 高成本端點：站內搜尋全表掃描、封存頁 SQL_CALC_FOUND_ROWS、
  *               低價值 Feed、oEmbed、XML-RPC，並為 CDN 提供正確的快取標頭。
- * Version:      1.0.0
+ * Version:      1.1.0
  * Requires PHP: 7.4
+ * Requires at least: 5.9
+ * Author:       ivanusto
+ * Author URI:   https://github.com/ivanusto
  * License:      GPL-3.0-or-later
  *
- * 安裝方式：置於 wp-content/mu-plugins/perf-hardening.php（must-use plugin，無需啟用）。
- * 部署後請至「設定 → 固定網址」按一次儲存，或執行 `wp rewrite flush`。
+ * 兩種安裝方式：
+ * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → 效能強化」調整參數。
+ * 2. mu-plugin：置於 wp-content/mu-plugins/perf-hardening.php，無需啟用。
+ *    部署後請至「設定 → 固定網址」按一次儲存，或執行 `wp rewrite flush`。
  *
- * 所有行為皆可透過常數關閉或調整，常數請定義於 wp-config.php 中
- * 「That's all, stop editing!」註解之前。完整清單見 README.md。
+ * 參數優先序：wp-config.php 的 PH_* 常數 > 後台設定 > 預設值。
+ * 已定義的常數會鎖定後台對應欄位。完整清單見 README.md。
  *
  * @package PerfHardening
  */
@@ -21,61 +26,81 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// 同時以 mu-plugin 與一般外掛安裝時，只載入先執行的那份。
+if ( defined( 'PH_LOADED' ) ) {
+	return;
+}
+define( 'PH_LOADED', true );
+
 /* -------------------------------------------------------------------------
- * 預設值
+ * 設定解析：常數 > 後台選項 > 預設值
  * ---------------------------------------------------------------------- */
 
-/** 各功能區塊開關。 */
-defined( 'PH_SEARCH_HARDENING' )   || define( 'PH_SEARCH_HARDENING', true );
-defined( 'PH_ARCHIVE_HARDENING' )  || define( 'PH_ARCHIVE_HARDENING', true );
-defined( 'PH_CACHE_HEADERS' )      || define( 'PH_CACHE_HEADERS', true );
-defined( 'PH_HEARTBEAT_TUNING' )   || define( 'PH_HEARTBEAT_TUNING', true );
-defined( 'PH_DISABLE_OEMBED' )     || define( 'PH_DISABLE_OEMBED', true );
-defined( 'PH_DISABLE_XMLRPC' )     || define( 'PH_DISABLE_XMLRPC', true );
-defined( 'PH_HTTP_THROTTLE' )      || define( 'PH_HTTP_THROTTLE', true );
-defined( 'PH_MANAGE_ROBOTS_TXT' )  || define( 'PH_MANAGE_ROBOTS_TXT', true );
+/**
+ * 全部設定的預設值。
+ *
+ * 鍵名同時對應 wp-config.php 常數（PH_ + 大寫鍵名）與後台欄位。
+ */
+function ph_defaults() {
+	return array(
+		// 功能開關。
+		'search_hardening'  => true,
+		'archive_hardening' => true,
+		'cache_headers'     => true,
+		'author_hardening'  => true,
+		'heartbeat_tuning'  => true,
+		'disable_oembed'    => true,
+		'disable_xmlrpc'    => true,
+		'http_throttle'     => true,
+		'manage_robots_txt' => true,
+		'block_user_enum'   => true,
 
-/** 搜尋防護參數。 */
-defined( 'PH_SEARCH_MIN_LEN' )     || define( 'PH_SEARCH_MIN_LEN', 2 );
-defined( 'PH_SEARCH_MAX_LEN' )     || define( 'PH_SEARCH_MAX_LEN', 40 );
-defined( 'PH_SEARCH_MAX_WORDS' )   || define( 'PH_SEARCH_MAX_WORDS', 4 );
-defined( 'PH_SEARCH_MAX_PAGES' )   || define( 'PH_SEARCH_MAX_PAGES', 3 );
-defined( 'PH_SEARCH_PER_PAGE' )    || define( 'PH_SEARCH_PER_PAGE', 10 );
-/** true 時只比對標題與摘要（需 WP 6.2+），可大幅降低掃描成本但會漏掉內文關鍵字。 */
-defined( 'PH_SEARCH_TITLE_ONLY' )  || define( 'PH_SEARCH_TITLE_ONLY', true );
-/** 針對非中日韓字元的長字串視為垃圾探測的長度門檻；設為 0 停用。 */
-defined( 'PH_SEARCH_LATIN_MAX' )   || define( 'PH_SEARCH_LATIN_MAX', 20 );
+		// 搜尋防護。
+		'search_min_len'    => 2,
+		'search_max_len'    => 40,
+		'search_max_words'  => 4,
+		'search_max_pages'  => 3,
+		'search_per_page'   => 10,
+		'search_title_only' => true,
+		'search_latin_max'  => 20,
 
-/** 封存頁參數。 */
-defined( 'PH_ARCHIVE_PER_PAGE' )   || define( 'PH_ARCHIVE_PER_PAGE', 10 );
-/** 文章數低於或等於此值的標籤頁標記 noindex；設為 0 停用。 */
-defined( 'PH_THIN_TERM_COUNT' )    || define( 'PH_THIN_TERM_COUNT', 2 );
-/** 封存頁分頁超過此頁數標記 noindex；設為 0 停用。 */
-defined( 'PH_DEEP_PAGE_NOINDEX' )  || define( 'PH_DEEP_PAGE_NOINDEX', 5 );
+		// 封存頁與 Feed。
+		'archive_per_page'  => 10,
+		'thin_term_count'   => 2,
+		'deep_page_noindex' => 5,
+		'feed_mode'         => 'strict',
+		'remove_feed_links' => true,
+		'tag_feed_items'    => 10,
+		'feed_cache_hours'  => 6,
+
+		// 其他。
+		'frontend_timeout'  => 5,
+		'heartbeat_edit'    => 60,
+		'heartbeat_list'    => 120,
+	);
+}
 
 /**
- * Feed 策略。
- * 'cache'  保留全部 Feed，僅加上快取標頭（最保守，適合有內容合作夥伴的站台）
- * 'strict' author / search / comment feed 回 410，tag feed 保留但拉長快取（預設）
- * 'off'    停用上述全部低價值 Feed，僅保留主 Feed 與分類 Feed
+ * 取得單一設定值。
+ *
+ * @param string $key ph_defaults() 中的鍵名。
+ * @return mixed
  */
-defined( 'PH_FEED_MODE' )          || define( 'PH_FEED_MODE', 'strict' );
-/** 移除 <head> 中 tag / author / comment feed 的 discovery link。 */
-defined( 'PH_REMOVE_FEED_LINKS' )  || define( 'PH_REMOVE_FEED_LINKS', true );
-/** Tag feed 的項目數上限；設為 0 表示不調整。 */
-defined( 'PH_TAG_FEED_ITEMS' )     || define( 'PH_TAG_FEED_ITEMS', 10 );
-/** 外部 Feed 抓取結果的快取時數。 */
-defined( 'PH_FEED_CACHE_HOURS' )   || define( 'PH_FEED_CACHE_HOURS', 6 );
+function ph_get( $key ) {
+	static $opts = null;
 
-/** 未登入訪客的前台請求，外部 HTTP 呼叫逾時上限（秒）。 */
-defined( 'PH_FRONTEND_TIMEOUT' )   || define( 'PH_FRONTEND_TIMEOUT', 5 );
+	$const = 'PH_' . strtoupper( $key );
+	if ( defined( $const ) ) {
+		return constant( $const );
+	}
 
-/** Heartbeat 間隔（秒）。 */
-defined( 'PH_HEARTBEAT_EDIT' )     || define( 'PH_HEARTBEAT_EDIT', 60 );
-defined( 'PH_HEARTBEAT_LIST' )     || define( 'PH_HEARTBEAT_LIST', 120 );
+	if ( null === $opts ) {
+		$saved = get_option( 'perf_hardening_settings' );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), ph_defaults() );
+	}
 
-/** 停用未登入者的 REST 使用者列舉端點。 */
-defined( 'PH_BLOCK_USER_ENUM' )    || define( 'PH_BLOCK_USER_ENUM', true );
+	return isset( $opts[ $key ] ) ? $opts[ $key ] : null;
+}
 
 /* -------------------------------------------------------------------------
  * 1. 站內搜尋防護
@@ -84,7 +109,7 @@ defined( 'PH_BLOCK_USER_ENUM' )    || define( 'PH_BLOCK_USER_ENUM', true );
  * 在數萬列的站台上單筆查詢可達十秒等級，且是機器人最常探測的端點。
  * ---------------------------------------------------------------------- */
 
-if ( PH_SEARCH_HARDENING ) {
+if ( ph_get( 'search_hardening' ) ) {
 
 	add_action( 'parse_query', function ( $query ) {
 
@@ -95,7 +120,7 @@ if ( PH_SEARCH_HARDENING ) {
 		$term = trim( (string) $query->get( 's' ) );
 		$len  = function_exists( 'mb_strlen' ) ? mb_strlen( $term, 'UTF-8' ) : strlen( $term );
 
-		$reject = ( $len < PH_SEARCH_MIN_LEN || $len > PH_SEARCH_MAX_LEN );
+		$reject = ( $len < ph_get( 'search_min_len' ) || $len > ph_get( 'search_max_len' ) );
 
 		// 非法 UTF-8 一律視為機器探測。
 		if ( ! $reject && function_exists( 'mb_check_encoding' ) && ! mb_check_encoding( $term, 'UTF-8' ) ) {
@@ -103,14 +128,14 @@ if ( PH_SEARCH_HARDENING ) {
 		}
 
 		// 詞數界限：垃圾探測多為長句關鍵字。
-		if ( ! $reject && PH_SEARCH_MAX_WORDS > 0
-			&& preg_match_all( '/\S+/u', $term ) > PH_SEARCH_MAX_WORDS ) {
+		if ( ! $reject && ph_get( 'search_max_words' ) > 0
+			&& preg_match_all( '/\S+/u', $term ) > ph_get( 'search_max_words' ) ) {
 			$reject = true;
 		}
 
 		// 不含中日韓字元的長字串視為垃圾探測（仍允許 AI、Netflix 等短英文詞）。
-		if ( ! $reject && PH_SEARCH_LATIN_MAX > 0
-			&& $len > PH_SEARCH_LATIN_MAX
+		if ( ! $reject && ph_get( 'search_latin_max' ) > 0
+			&& $len > ph_get( 'search_latin_max' )
 			&& ! preg_match( '/[\x{4e00}-\x{9fff}\x{3040}-\x{30ff}\x{ac00}-\x{d7af}]/u', $term ) ) {
 			$reject = true;
 		}
@@ -133,15 +158,15 @@ if ( PH_SEARCH_HARDENING ) {
 		// 限縮查詢範圍，讓 MySQL 得以先用 type_status_date 索引收斂。
 		$query->set( 'post_type', apply_filters( 'ph_search_post_types', array( 'post' ) ) );
 		$query->set( 'post_status', 'publish' );
-		$query->set( 'posts_per_page', PH_SEARCH_PER_PAGE );
+		$query->set( 'posts_per_page', ph_get( 'search_per_page' ) );
 		$query->set( 'no_found_rows', true );
 		$query->set( 'ignore_sticky_posts', true );
 
-		if ( PH_SEARCH_TITLE_ONLY && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
+		if ( ph_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
 			$query->set( 'search_columns', array( 'post_title', 'post_excerpt' ) );
 		}
 
-		if ( PH_SEARCH_MAX_PAGES > 0 && (int) $query->get( 'paged' ) > PH_SEARCH_MAX_PAGES ) {
+		if ( ph_get( 'search_max_pages' ) > 0 && (int) $query->get( 'paged' ) > ph_get( 'search_max_pages' ) ) {
 			$query->set( 'post__in', array( 0 ) );
 		}
 	}, 20 );
@@ -154,7 +179,7 @@ if ( PH_SEARCH_HARDENING ) {
  * SQL_CALC_FOUND_ROWS 會強迫 MySQL 掃完全部符合列才回傳一頁。
  * ---------------------------------------------------------------------- */
 
-if ( PH_ARCHIVE_HARDENING ) {
+if ( ph_get( 'archive_hardening' ) ) {
 
 	add_action( 'pre_get_posts', function ( $query ) {
 
@@ -164,7 +189,7 @@ if ( PH_ARCHIVE_HARDENING ) {
 
 		if ( $query->is_tag() || $query->is_tax() || $query->is_author() || $query->is_date() ) {
 			$query->set( 'no_found_rows', true );
-			$query->set( 'posts_per_page', PH_ARCHIVE_PER_PAGE );
+			$query->set( 'posts_per_page', ph_get( 'archive_per_page' ) );
 		}
 	}, 20 );
 
@@ -213,20 +238,21 @@ add_action( 'pre_get_posts', function ( $query ) {
  * 3. 端點層級的快取標頭與 Feed 策略
  * ---------------------------------------------------------------------- */
 
-if ( PH_CACHE_HEADERS ) {
+if ( ph_get( 'cache_headers' ) ) {
 
 	add_action( 'template_redirect', function () {
 
 		// 3a. Feed。
 		if ( is_feed() ) {
 
-			$low_value = is_author() || is_search() || is_comment_feed();
+			$low_value = ( is_author() && ph_get( 'author_hardening' ) )
+				|| is_search() || is_comment_feed();
 
-			if ( 'off' === PH_FEED_MODE ) {
+			if ( 'off' === ph_get( 'feed_mode' ) ) {
 				$low_value = $low_value || is_tag();
 			}
 
-			if ( 'cache' !== PH_FEED_MODE && $low_value ) {
+			if ( 'cache' !== ph_get( 'feed_mode' ) && $low_value ) {
 				status_header( 410 );
 				header( 'Cache-Control: public, max-age=86400, s-maxage=604800' );
 				header( 'X-Robots-Tag: noindex, nofollow', true );
@@ -253,9 +279,9 @@ if ( PH_CACHE_HEADERS ) {
 
 		// 3c. 標籤頁：薄內容標記 noindex，避免搜尋引擎反覆回爬。
 		if ( is_tag() ) {
-			if ( PH_THIN_TERM_COUNT > 0 ) {
+			if ( ph_get( 'thin_term_count' ) > 0 ) {
 				$term = get_queried_object();
-				if ( $term instanceof WP_Term && $term->count <= PH_THIN_TERM_COUNT ) {
+				if ( $term instanceof WP_Term && $term->count <= ph_get( 'thin_term_count' ) ) {
 					header( 'X-Robots-Tag: noindex, follow', true );
 				}
 			}
@@ -264,11 +290,11 @@ if ( PH_CACHE_HEADERS ) {
 		}
 
 		// 3d. 作者頁與深層分頁。
-		$deep = PH_DEEP_PAGE_NOINDEX > 0
+		$deep = ph_get( 'deep_page_noindex' ) > 0
 			&& is_archive()
-			&& (int) get_query_var( 'paged' ) > PH_DEEP_PAGE_NOINDEX;
+			&& (int) get_query_var( 'paged' ) > ph_get( 'deep_page_noindex' );
 
-		if ( is_author() || $deep ) {
+		if ( ( is_author() && ph_get( 'author_hardening' ) ) || $deep ) {
 			header( 'X-Robots-Tag: noindex, follow', true );
 		}
 	}, 1 );
@@ -288,16 +314,15 @@ if ( PH_CACHE_HEADERS ) {
 	}, 999 );
 }
 
-if ( PH_TAG_FEED_ITEMS > 0 ) {
-	add_filter( 'pre_option_posts_per_rss', function ( $value ) {
-		if ( is_feed() && is_tag() ) {
-			return PH_TAG_FEED_ITEMS;
-		}
-		return $value;
-	} );
-}
+add_filter( 'pre_option_posts_per_rss', function ( $value ) {
+	$items = (int) ph_get( 'tag_feed_items' );
+	if ( $items > 0 && is_feed() && is_tag() ) {
+		return $items;
+	}
+	return $value;
+} );
 
-if ( PH_REMOVE_FEED_LINKS ) {
+if ( ph_get( 'remove_feed_links' ) ) {
 	// 移除 tag / author / comment feed 的 discovery link。
 	// 注意：這同時會移除分類 Feed 的 discovery link，已知合作夥伴的既有 URL 不受影響。
 	remove_action( 'wp_head', 'feed_links_extra', 3 );
@@ -309,16 +334,16 @@ if ( PH_REMOVE_FEED_LINKS ) {
  * 後台為真實編輯者使用，不可封鎖，僅降低頻率。
  * ---------------------------------------------------------------------- */
 
-if ( PH_HEARTBEAT_TUNING ) {
+if ( ph_get( 'heartbeat_tuning' ) ) {
 
 	add_filter( 'heartbeat_settings', function ( $settings ) {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
 		$settings['interval'] = ( $screen && 'edit' === $screen->base )
-			? PH_HEARTBEAT_LIST
-			: PH_HEARTBEAT_EDIT;
+			? ph_get( 'heartbeat_list' )
+			: ph_get( 'heartbeat_edit' );
 
-		$settings['minimalInterval'] = PH_HEARTBEAT_EDIT;
+		$settings['minimalInterval'] = ph_get( 'heartbeat_edit' );
 
 		return $settings;
 	} );
@@ -337,7 +362,7 @@ if ( PH_HEARTBEAT_TUNING ) {
  * /{permalink}/embed/ 是常見的爬蟲深淵，且多數新聞站並不依賴它。
  * ---------------------------------------------------------------------- */
 
-if ( PH_DISABLE_OEMBED ) {
+if ( ph_get( 'disable_oembed' ) ) {
 
 	add_action( 'init', function () {
 		remove_action( 'rest_api_init', 'wp_oembed_register_route' );
@@ -369,10 +394,10 @@ if ( PH_DISABLE_OEMBED ) {
  * ---------------------------------------------------------------------- */
 
 add_filter( 'wp_feed_cache_transient_lifetime', function () {
-	return PH_FEED_CACHE_HOURS * HOUR_IN_SECONDS;
+	return (int) ph_get( 'feed_cache_hours' ) * HOUR_IN_SECONDS;
 }, 100 );
 
-if ( PH_HTTP_THROTTLE ) {
+if ( ph_get( 'http_throttle' ) ) {
 
 	add_filter( 'http_request_args', function ( $args, $url ) {
 
@@ -389,7 +414,9 @@ if ( PH_HTTP_THROTTLE ) {
 			return $args;
 		}
 
-		$args['timeout'] = min( (int) ( $args['timeout'] ?? PH_FRONTEND_TIMEOUT ), PH_FRONTEND_TIMEOUT );
+		$cap = (int) ph_get( 'frontend_timeout' );
+
+		$args['timeout'] = min( (int) ( $args['timeout'] ?? $cap ), $cap );
 
 		return $args;
 	}, 100, 2 );
@@ -406,7 +433,7 @@ add_action( 'wp_dashboard_setup', function () {
  * 7. XML-RPC / pingback / REST 使用者列舉
  * ---------------------------------------------------------------------- */
 
-if ( PH_DISABLE_XMLRPC ) {
+if ( ph_get( 'disable_xmlrpc' ) ) {
 
 	add_filter( 'xmlrpc_enabled', '__return_false' );
 
@@ -416,7 +443,7 @@ if ( PH_DISABLE_XMLRPC ) {
 	} );
 }
 
-if ( PH_BLOCK_USER_ENUM ) {
+if ( ph_get( 'block_user_enum' ) ) {
 
 	add_filter( 'rest_endpoints', function ( $endpoints ) {
 		if ( is_user_logged_in() ) {
@@ -435,7 +462,7 @@ if ( PH_BLOCK_USER_ENUM ) {
  * Sitemap 位址自動偵測 Yoast / Rank Math，否則採用核心的 wp-sitemap.xml。
  * ---------------------------------------------------------------------- */
 
-if ( PH_MANAGE_ROBOTS_TXT ) {
+if ( ph_get( 'manage_robots_txt' ) ) {
 
 	add_filter( 'robots_txt', function ( $output, $public ) {
 
@@ -456,12 +483,18 @@ if ( PH_MANAGE_ROBOTS_TXT ) {
 			'Disallow: /*?s=',
 			'Disallow: /search/',
 			'Disallow: /tag/*/feed/',
-			'Disallow: /author/',
+		);
+
+		if ( ph_get( 'author_hardening' ) ) {
+			$rules[] = 'Disallow: /author/';
+		}
+
+		$rules = array_merge( $rules, array(
 			'Disallow: /*/embed/',
 			'Disallow: /xmlrpc.php',
 			'Disallow: /wp-json/',
 			'',
-		);
+		) );
 
 		foreach ( apply_filters( 'ph_blocked_bots', array( 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot' ) ) as $bot ) {
 			$rules[] = 'User-agent: ' . $bot;
@@ -480,4 +513,211 @@ if ( PH_MANAGE_ROBOTS_TXT ) {
 
 		return implode( "\n", $rules ) . "\n";
 	}, 10, 2 );
+}
+
+/* -------------------------------------------------------------------------
+ * 9. 以一般外掛安裝時的啟用／停用處理
+ *
+ * 刪除 rewrite_rules 使其於「下一個」請求依當時的外掛狀態重建，
+ * 避免在狀態轉換中的本請求以錯誤的 filter 集合重建。
+ * mu-plugin 模式不會觸發這兩個 hook，flush 方式見 README。
+ * ---------------------------------------------------------------------- */
+
+register_activation_hook( __FILE__, function () {
+	delete_option( 'rewrite_rules' );
+} );
+
+register_deactivation_hook( __FILE__, function () {
+	delete_option( 'rewrite_rules' );
+} );
+
+/* -------------------------------------------------------------------------
+ * 10. 後台設定頁
+ * ---------------------------------------------------------------------- */
+
+if ( is_admin() ) {
+
+	/** 欄位定義：區塊標題 => [ 鍵名 => [ 型別, 標籤, 說明 ] ]。 */
+	function ph_settings_fields() {
+		return array(
+			'功能開關' => array(
+				'search_hardening'  => array( 'bool', '站內搜尋防護', '過濾垃圾關鍵字並限縮查詢範圍' ),
+				'archive_hardening' => array( 'bool', '封存頁查詢瘦身', '標籤／作者／日期封存頁關閉 SQL_CALC_FOUND_ROWS' ),
+				'cache_headers'     => array( 'bool', '快取與 robots 標頭', 'Feed、搜尋頁、標籤頁、404 依端點類型送出 Cache-Control 與 X-Robots-Tag' ),
+				'author_hardening'  => array( 'bool', '作者頁收斂', '作者頁 noindex、author feed 回 410、robots.txt 封鎖 /author/。想保留作者頁曝光的站台請關閉' ),
+				'heartbeat_tuning'  => array( 'bool', 'Heartbeat 調頻', '降低後台輪詢頻率並停用前台 Heartbeat' ),
+				'disable_oembed'    => array( 'bool', '停用 oEmbed', '移除 /embed/ 路由與 oEmbed 端點；切換後自動於下一個請求重建 rewrite rules' ),
+				'disable_xmlrpc'    => array( 'bool', '停用 XML-RPC', '含 pingback' ),
+				'http_throttle'     => array( 'bool', '前台外部請求節流', '未登入訪客的前台請求套用外部 HTTP 逾時上限' ),
+				'manage_robots_txt' => array( 'bool', '接管 robots.txt', '僅在根目錄無實體 robots.txt 時生效' ),
+				'block_user_enum'   => array( 'bool', '封鎖 REST 使用者列舉', '未登入者無法存取 /wp/v2/users' ),
+			),
+			'搜尋' => array(
+				'search_min_len'    => array( 'int', '關鍵字最短長度', '' ),
+				'search_max_len'    => array( 'int', '關鍵字最長長度', '' ),
+				'search_max_words'  => array( 'int', '詞數上限', '空白分隔詞數，0 停用' ),
+				'search_max_pages'  => array( 'int', '結果頁數上限', '0 停用' ),
+				'search_per_page'   => array( 'int', '每頁筆數', '' ),
+				'search_title_only' => array( 'bool', '只比對標題與摘要', '需 WP 6.2+。大幅降低掃描成本，但會漏掉內文關鍵字' ),
+				'search_latin_max'  => array( 'int', '非中日韓長字串門檻', '超過此長度且不含中日韓字元視為垃圾探測，0 停用' ),
+			),
+			'封存頁與 Feed' => array(
+				'archive_per_page'  => array( 'int', '封存頁每頁筆數', '' ),
+				'thin_term_count'   => array( 'int', '薄內容標籤門檻', '文章數低於或等於此值的標籤頁標記 noindex，0 停用' ),
+				'deep_page_noindex' => array( 'int', '深層分頁門檻', '分頁超過此頁數標記 noindex，0 停用' ),
+				'feed_mode'         => array( 'select', 'Feed 策略', '部署前請先確認合作夥伴訂閱的 Feed 路徑' ),
+				'remove_feed_links' => array( 'bool', '移除額外 Feed discovery link', '同時移除分類 Feed 的 discovery link，既有 URL 不受影響' ),
+				'tag_feed_items'    => array( 'int', 'Tag feed 項目數', '0 表示不調整' ),
+				'feed_cache_hours'  => array( 'int', '外部 Feed 快取時數', 'fetch_feed() 抓取結果的快取時間' ),
+			),
+			'其他' => array(
+				'frontend_timeout'  => array( 'int', '前台外部請求逾時（秒）', '未登入訪客的前台請求，外部 HTTP 呼叫逾時上限' ),
+				'heartbeat_edit'    => array( 'int', '編輯畫面 Heartbeat 間隔（秒）', '' ),
+				'heartbeat_list'    => array( 'int', '列表畫面 Heartbeat 間隔（秒）', '' ),
+			),
+		);
+	}
+
+	add_action( 'admin_menu', function () {
+		add_options_page( '效能強化', '效能強化', 'manage_options', 'perf-hardening', 'ph_render_settings_page' );
+	} );
+
+	// 儲存：非 Settings API 的精簡表單，POST 回同一頁。
+	add_action( 'admin_init', function () {
+
+		if ( ! isset( $_POST['ph_settings_nonce'] ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		check_admin_referer( 'ph_save_settings', 'ph_settings_nonce' );
+
+		$defaults = ph_defaults();
+		$saved    = get_option( 'perf_hardening_settings' );
+		$old      = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		$post     = wp_unslash( $_POST );
+		$new      = array();
+
+		foreach ( $defaults as $key => $default ) {
+
+			// 常數鎖定的欄位不在表單中，保留原儲存值。
+			if ( defined( 'PH_' . strtoupper( $key ) ) ) {
+				$new[ $key ] = $old[ $key ];
+				continue;
+			}
+
+			if ( 'feed_mode' === $key ) {
+				$mode        = isset( $post['ph_feed_mode'] ) ? (string) $post['ph_feed_mode'] : $default;
+				$new[ $key ] = in_array( $mode, array( 'cache', 'strict', 'off' ), true ) ? $mode : $default;
+			} elseif ( is_bool( $default ) ) {
+				$new[ $key ] = ! empty( $post[ 'ph_' . $key ] );
+			} else {
+				$new[ $key ] = isset( $post[ 'ph_' . $key ] ) ? max( 0, (int) $post[ 'ph_' . $key ] ) : $default;
+			}
+		}
+
+		// 個別下限，避免 0 造成極端行為。
+		$new['search_per_page']  = max( 1, $new['search_per_page'] );
+		$new['archive_per_page'] = max( 1, $new['archive_per_page'] );
+		$new['frontend_timeout'] = max( 1, $new['frontend_timeout'] );
+		$new['feed_cache_hours'] = max( 1, $new['feed_cache_hours'] );
+		$new['heartbeat_edit']   = min( 300, max( 15, $new['heartbeat_edit'] ) );
+		$new['heartbeat_list']   = min( 300, max( 15, $new['heartbeat_list'] ) );
+
+		update_option( 'perf_hardening_settings', $new );
+
+		// oEmbed 開關影響 rewrite rules：刪除後於下一個請求依新設定重建。
+		if ( $old['disable_oembed'] !== $new['disable_oembed'] ) {
+			delete_option( 'rewrite_rules' );
+		}
+
+		wp_safe_redirect( add_query_arg(
+			array(
+				'page'    => 'perf-hardening',
+				'updated' => '1',
+			),
+			admin_url( 'options-general.php' )
+		) );
+		exit;
+	} );
+
+	function ph_render_settings_page() {
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$saved = get_option( 'perf_hardening_settings' );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), ph_defaults() );
+
+		echo '<div class="wrap"><h1>效能強化</h1>';
+
+		if ( isset( $_GET['updated'] ) ) {
+			echo '<div class="notice notice-success is-dismissible"><p>設定已儲存。快取中的頁面需待快取過期或手動清除後才會反映。</p></div>';
+		}
+
+		echo '<p>優先序：<code>wp-config.php</code> 的 <code>PH_*</code> 常數 &gt; 此處設定 &gt; 預設值。已定義常數的欄位會顯示為鎖定。</p>';
+		echo '<form method="post">';
+		wp_nonce_field( 'ph_save_settings', 'ph_settings_nonce' );
+
+		foreach ( ph_settings_fields() as $section => $fields ) {
+
+			echo '<h2>' . esc_html( $section ) . '</h2>';
+			echo '<table class="form-table" role="presentation">';
+
+			foreach ( $fields as $key => $field ) {
+
+				list( $type, $label, $desc ) = $field;
+
+				$const  = 'PH_' . strtoupper( $key );
+				$locked = defined( $const );
+				$value  = $locked ? constant( $const ) : $opts[ $key ];
+				$name   = 'ph_' . $key;
+
+				echo '<tr><th scope="row"><label for="' . esc_attr( $name ) . '">' . esc_html( $label ) . '</label></th><td>';
+
+				if ( 'bool' === $type ) {
+					printf(
+						'<input type="checkbox" id="%1$s" name="%1$s" value="1"%2$s%3$s>',
+						esc_attr( $name ),
+						checked( (bool) $value, true, false ),
+						disabled( $locked, true, false )
+					);
+				} elseif ( 'select' === $type ) {
+					$modes = array(
+						'cache'  => 'cache — 全部 Feed 保留，僅加快取標頭',
+						'strict' => 'strict — author / search / comment feed 回 410（預設）',
+						'off'    => 'off — 僅保留主 Feed 與分類 Feed',
+					);
+					echo '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '"' . disabled( $locked, true, false ) . '>';
+					foreach ( $modes as $mode => $text ) {
+						echo '<option value="' . esc_attr( $mode ) . '"' . selected( (string) $value, $mode, false ) . '>' . esc_html( $text ) . '</option>';
+					}
+					echo '</select>';
+				} else {
+					printf(
+						'<input type="number" class="small-text" id="%1$s" name="%1$s" value="%2$s" min="0"%3$s>',
+						esc_attr( $name ),
+						esc_attr( (int) $value ),
+						disabled( $locked, true, false )
+					);
+				}
+
+				if ( '' !== $desc ) {
+					echo '<p class="description">' . esc_html( $desc ) . '</p>';
+				}
+				if ( $locked ) {
+					echo '<p class="description">已由 <code>' . esc_html( $const ) . '</code> 固定，移除該常數後才可在此調整。</p>';
+				}
+
+				echo '</td></tr>';
+			}
+
+			echo '</table>';
+		}
+
+		submit_button( '儲存設定' );
+		echo '</form></div>';
+	}
 }
