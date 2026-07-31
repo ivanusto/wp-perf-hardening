@@ -18,7 +18,7 @@ Built for large, crawl-heavy content sites (news, media, aggregators) where bot 
 * **Archive slimming** — drops `SQL_CALC_FOUND_ROWS` on tag/author/date archives and all secondary queries; tag archive pagination is restored from the stored term count at zero cost.
 * **Endpoint cache headers** — correct `Cache-Control` / `X-Robots-Tag` for feeds, search, tag pages, author pages, deep pagination and 404s, so your CDN can absorb bot traffic.
 * **Feed policy** — three modes (cache / strict / off) for low-value feeds; author, search and comment feeds can return 410.
-* **Author page hardening** — a single switch for author-page noindex, author feed 410 and the robots.txt `/author/` block; turn it off on sites that want author archives indexed.
+* **Author page hardening** — a single switch for author-page noindex, author feed 410 and the robots.txt `/author/` block. Off by default, since most sites want author archives indexed.
 * **Heartbeat tuning, oEmbed/XML-RPC disabling, REST user enumeration blocking, frontend external HTTP timeout cap, managed virtual robots.txt, removal of remote-fetching dashboard news widgets.**
 
 Every feature has its own on/off switch — nothing is forced on you.
@@ -41,7 +41,7 @@ Full documentation (Traditional Chinese): https://github.com/ivanusto/wp-perf-ha
 
 = Does it break my content partners' feeds? =
 
-The main feed and category feeds are always kept. Check which feed paths your partners subscribe to before choosing the `off` feed mode; `strict` (default) only returns 410 for author, search and comment feeds.
+The main feed and category feeds are always kept. Check which feed paths your partners subscribe to before choosing the `off` feed mode. With the defaults, `strict` mode only returns 410 for search and comment feeds; author feeds are included only if you enable author page hardening.
 
 = A plugin making external API calls started timing out. =
 
@@ -50,6 +50,7 @@ The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in us
 == Changelog ==
 
 = 1.5.0 =
+* Author page hardening is now off by default — most sites want their author archives indexed. Enable it in the settings when you don't.
 * Dashboard news widget removal is now an opt-out setting instead of always-on behaviour.
 * Corrected the sister plugin's name to Omni Webmaster & SEO Suite.
 

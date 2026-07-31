@@ -59,7 +59,7 @@ mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩
 | `PH_SEARCH_HARDENING` | `true` | 站內搜尋防護 |
 | `PH_ARCHIVE_HARDENING` | `true` | 封存頁查詢瘦身 |
 | `PH_CACHE_HEADERS` | `true` | 端點層級的快取與 robots 標頭 |
-| `PH_AUTHOR_HARDENING` | `true` | 作者頁收斂：作者頁 `noindex`、author feed 回 410、robots.txt 封鎖 `/author/`。想保留作者頁曝光的站台設為 `false` |
+| `PH_AUTHOR_HARDENING` | `false` | 作者頁收斂：作者頁 `noindex`、author feed 回 410、robots.txt 封鎖 `/author/`。多數站台需要作者頁，故預設關閉；不希望作者頁進搜尋結果時設為 `true` |
 | `PH_HEARTBEAT_TUNING` | `true` | Heartbeat 調頻 |
 | `PH_DISABLE_OEMBED` | `true` | 停用 oEmbed 端點與 `/embed/` 路由 |
 | `PH_DISABLE_XMLRPC` | `true` | 停用 XML-RPC 與 pingback |

@@ -49,8 +49,8 @@ msgstr "Feed、搜尋頁、標籤頁、404 依端點類型送出 Cache-Control �
 msgid "Author page hardening"
 msgstr "作者頁收斂"
 
-msgid "Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed"
-msgstr "作者頁 noindex、author feed 回 410、robots.txt 封鎖 /author/。想保留作者頁曝光的站台請關閉"
+msgid "Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Off by default; enable it only on sites that do not want author archives in search results"
+msgstr "作者頁 noindex、author feed 回 410、robots.txt 封鎖 /author/。預設關閉，僅在不希望作者頁出現在搜尋結果的站台開啟"
 
 msgid "Heartbeat tuning"
 msgstr "Heartbeat 調頻"

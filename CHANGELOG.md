@@ -9,6 +9,12 @@
 
 ### 變更
 
+- **作者頁收斂（`PH_AUTHOR_HARDENING`）預設改為 `false`。** 多數站台需要作者頁被索引，
+  只有少數站台需要收斂，故改為預設關閉、需要時再開啟。連帶影響：預設情況下
+  author feed 不再回 410（`strict` 模式僅對 search / comment feed 生效）、
+  作者頁不再送出 `noindex`、robots.txt 不再封鎖 `/author/`。
+  **既有站台若要維持原本的收斂行為，請於 `wp-config.php` 定義
+  `define( 'PH_AUTHOR_HARDENING', true );` 或於後台開啟該項**
 - 儀表板新聞 widget 的移除改為可關閉的設定（`PH_DASHBOARD_WIDGETS`，預設 `true`），
   原本為無條件執行。此行為會移除其他外掛（W3 Total Cache）的 widget，
   依 wp.org 審核準則應交由使用者控制

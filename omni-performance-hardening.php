@@ -71,7 +71,8 @@ function omni_performance_hardening_defaults() {
 		'search_hardening'  => true,
 		'archive_hardening' => true,
 		'cache_headers'     => true,
-		'author_hardening'  => true,
+		// 多數站台需要作者頁，預設不收斂；需要時再開啟。
+		'author_hardening'  => false,
 		'heartbeat_tuning'  => true,
 		'disable_oembed'    => true,
 		'disable_xmlrpc'    => true,
@@ -575,7 +576,7 @@ if ( is_admin() ) {
 				'search_hardening'  => array( 'bool', __( 'Search hardening', 'omni-performance-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'omni-performance-hardening' ) ),
 				'archive_hardening' => array( 'bool', __( 'Archive query slimming', 'omni-performance-hardening' ), __( 'Drop SQL_CALC_FOUND_ROWS on tag, author and date archives', 'omni-performance-hardening' ) ),
 				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'omni-performance-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'omni-performance-hardening' ) ),
-				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'omni-performance-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed', 'omni-performance-hardening' ) ),
+				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'omni-performance-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Off by default; enable it only on sites that do not want author archives in search results', 'omni-performance-hardening' ) ),
 				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'omni-performance-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'omni-performance-hardening' ) ),
 				'disable_oembed'    => array( 'bool', __( 'Disable oEmbed', 'omni-performance-hardening' ), __( 'Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling', 'omni-performance-hardening' ) ),
 				'disable_xmlrpc'    => array( 'bool', __( 'Disable XML-RPC', 'omni-performance-hardening' ), __( 'Including pingback', 'omni-performance-hardening' ) ),
