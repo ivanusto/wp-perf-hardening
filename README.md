@@ -18,7 +18,7 @@
 
 ### 方式 A：一般外掛（建議給需要後台調參的站台）
 
-1. 從 GitHub 下載 ZIP（Code → Download ZIP），或抓 [Releases](https://github.com/ivanusto/wp-perf-hardening/releases) 的外掛壓縮檔
+1. 從 GitHub 下載 ZIP（Code → Download ZIP），或抓 [Releases](https://github.com/ivanusto/omni-wp-perf-hardening/releases) 的外掛壓縮檔
 2. 後台「外掛 → 安裝外掛 → 上傳外掛」上傳並啟用
 3. 於「設定 → Omni 效能強化」逐項調整參數
 

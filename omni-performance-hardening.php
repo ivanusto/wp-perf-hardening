@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:  Omni Performance Hardening
- * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
+ * Plugin URI:   https://github.com/ivanusto/omni-wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
  * Version:      1.6.0
  * Requires PHP: 7.4
@@ -14,14 +14,14 @@
  * Domain Path:  /languages
  *
  * 兩種安裝方式：
- * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → 效能強化」調整參數。
+ * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → Omni 效能強化」調整參數。
  * 2. mu-plugin：置於 wp-content/mu-plugins/omni-performance-hardening.php，無需啟用。
  *    部署後請至「設定 → 固定網址」按一次儲存，或執行 `wp rewrite flush`。
  *
  * 參數優先序：wp-config.php 的 PH_* 常數 > 後台設定 > 預設值。
  * 已定義的常數會鎖定後台對應欄位。完整清單見 README.md。
  *
- * @package PerfHardening
+ * @package OmniPerformanceHardening
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

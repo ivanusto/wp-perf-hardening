@@ -29,7 +29,7 @@ The plugin also works as a must-use plugin: drop `omni-performance-hardening.php
 
 **Sister plugin**: [Omni Webmaster & SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/) — SEO and webmaster tooling from the same team. This plugin keeps your site fast and crawl-efficient; the SEO suite handles visibility and indexing.
 
-Full documentation (Traditional Chinese): https://github.com/ivanusto/wp-perf-hardening
+Full documentation (Traditional Chinese): https://github.com/ivanusto/omni-wp-perf-hardening
 
 == Installation ==
 

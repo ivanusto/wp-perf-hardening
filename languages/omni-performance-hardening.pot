@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-31T05:21:57+00:00\n"
+"POT-Creation-Date: 2026-07-31T06:02:54+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: omni-performance-hardening\n"
@@ -24,7 +24,7 @@ msgstr ""
 
 #. Plugin URI of the plugin
 #: omni-performance-hardening.php
-msgid "https://github.com/ivanusto/wp-perf-hardening"
+msgid "https://github.com/ivanusto/omni-wp-perf-hardening"
 msgstr ""
 
 #. Description of the plugin
