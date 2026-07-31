@@ -115,10 +115,10 @@ mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種�
 
 | Filter | 說明 |
 |---|---|
-| `ph_reject_search` | `( bool $reject, string $term, WP_Query $query )` 覆寫垃圾搜尋判定 |
-| `ph_search_post_types` | `( array $post_types )` 調整搜尋涵蓋的 post type |
-| `ph_blocked_bots` | `( array $bots )` robots.txt 中封鎖的 UA 清單 |
-| `ph_robots_txt_rules` | `( array $rules )` 覆寫整份 robots.txt，每個元素為一行 |
+| `perf_hardening_reject_search` | `( bool $reject, string $term, WP_Query $query )` 覆寫垃圾搜尋判定 |
+| `perf_hardening_search_post_types` | `( array $post_types )` 調整搜尋涵蓋的 post type |
+| `perf_hardening_blocked_bots` | `( array $bots )` robots.txt 中封鎖的 UA 清單 |
+| `perf_hardening_robots_txt_rules` | `( array $rules )` 覆寫整份 robots.txt，每個元素為一行 |
 
 ## 已知的相容性事項
 
@@ -172,4 +172,4 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 
 ## 授權
 
-GPL-2.0-or-later（與 WordPress 官方外掛目錄的授權要求一致）
+GPL-2.0-or-later

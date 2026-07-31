@@ -1,1 +1,8 @@
 * text=auto eol=lf
+
+# 發佈包（git archive）排除的開發檔案
+.editorconfig export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+.github export-ignore
+CHANGELOG.md export-ignore

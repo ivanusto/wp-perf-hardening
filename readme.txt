@@ -4,11 +4,11 @@ Tags: performance, cache, search, feed, xml-rpc
 Requires at least: 5.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Tames the most expensive WordPress endpoints: search table scans, archive queries, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
+Tames expensive WordPress endpoints — search scans, archive queries, low-value feeds, oEmbed, XML-RPC — with CDN-friendly cache headers.
 
 == Description ==
 
@@ -44,6 +44,9 @@ The main feed and category feeds are always kept. Check which feed paths your pa
 The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "前台外部請求節流" or raise the timeout.
 
 == Changelog ==
+
+= 1.3.0 =
+* Renamed global functions and filter hooks from the `ph_` prefix to `perf_hardening_` (Plugin Check compliance). `PH_*` wp-config constants are unchanged.
 
 = 1.2.0 =
 * Internationalized all UI strings (text domain `perf-hardening`); English source with bundled Traditional Chinese (zh_TW) translation.

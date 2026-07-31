@@ -3,7 +3,7 @@
  * Plugin Name:  Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.2.0
+ * Version:      1.3.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -54,7 +54,7 @@ add_action( 'init', function () {
  *
  * 鍵名同時對應 wp-config.php 常數（PH_ + 大寫鍵名）與後台欄位。
  */
-function ph_defaults() {
+function perf_hardening_defaults() {
 	return array(
 		// 功能開關。
 		'search_hardening'  => true,
@@ -96,10 +96,10 @@ function ph_defaults() {
 /**
  * 取得單一設定值。
  *
- * @param string $key ph_defaults() 中的鍵名。
+ * @param string $key perf_hardening_defaults() 中的鍵名。
  * @return mixed
  */
-function ph_get( $key ) {
+function perf_hardening_get( $key ) {
 	static $opts = null;
 
 	$const = 'PH_' . strtoupper( $key );
@@ -109,7 +109,7 @@ function ph_get( $key ) {
 
 	if ( null === $opts ) {
 		$saved = get_option( 'perf_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), ph_defaults() );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), perf_hardening_defaults() );
 	}
 
 	return isset( $opts[ $key ] ) ? $opts[ $key ] : null;
@@ -122,7 +122,7 @@ function ph_get( $key ) {
  * 在數萬列的站台上單筆查詢可達十秒等級，且是機器人最常探測的端點。
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'search_hardening' ) ) {
+if ( perf_hardening_get( 'search_hardening' ) ) {
 
 	add_action( 'parse_query', function ( $query ) {
 
@@ -133,7 +133,7 @@ if ( ph_get( 'search_hardening' ) ) {
 		$term = trim( (string) $query->get( 's' ) );
 		$len  = function_exists( 'mb_strlen' ) ? mb_strlen( $term, 'UTF-8' ) : strlen( $term );
 
-		$reject = ( $len < ph_get( 'search_min_len' ) || $len > ph_get( 'search_max_len' ) );
+		$reject = ( $len < perf_hardening_get( 'search_min_len' ) || $len > perf_hardening_get( 'search_max_len' ) );
 
 		// 非法 UTF-8 一律視為機器探測。
 		if ( ! $reject && function_exists( 'mb_check_encoding' ) && ! mb_check_encoding( $term, 'UTF-8' ) ) {
@@ -141,14 +141,14 @@ if ( ph_get( 'search_hardening' ) ) {
 		}
 
 		// 詞數界限：垃圾探測多為長句關鍵字。
-		if ( ! $reject && ph_get( 'search_max_words' ) > 0
-			&& preg_match_all( '/\S+/u', $term ) > ph_get( 'search_max_words' ) ) {
+		if ( ! $reject && perf_hardening_get( 'search_max_words' ) > 0
+			&& preg_match_all( '/\S+/u', $term ) > perf_hardening_get( 'search_max_words' ) ) {
 			$reject = true;
 		}
 
 		// 不含中日韓字元的長字串視為垃圾探測（仍允許 AI、Netflix 等短英文詞）。
-		if ( ! $reject && ph_get( 'search_latin_max' ) > 0
-			&& $len > ph_get( 'search_latin_max' )
+		if ( ! $reject && perf_hardening_get( 'search_latin_max' ) > 0
+			&& $len > perf_hardening_get( 'search_latin_max' )
 			&& ! preg_match( '/[\x{4e00}-\x{9fff}\x{3040}-\x{30ff}\x{ac00}-\x{d7af}]/u', $term ) ) {
 			$reject = true;
 		}
@@ -160,7 +160,7 @@ if ( ph_get( 'search_hardening' ) ) {
 		 * @param string   $term   搜尋關鍵字。
 		 * @param WP_Query $query  查詢物件。
 		 */
-		$reject = (bool) apply_filters( 'ph_reject_search', $reject, $term, $query );
+		$reject = (bool) apply_filters( 'perf_hardening_reject_search', $reject, $term, $query );
 
 		if ( $reject ) {
 			$query->set( 'post__in', array( 0 ) );
@@ -169,17 +169,17 @@ if ( ph_get( 'search_hardening' ) ) {
 		}
 
 		// 限縮查詢範圍，讓 MySQL 得以先用 type_status_date 索引收斂。
-		$query->set( 'post_type', apply_filters( 'ph_search_post_types', array( 'post' ) ) );
+		$query->set( 'post_type', apply_filters( 'perf_hardening_search_post_types', array( 'post' ) ) );
 		$query->set( 'post_status', 'publish' );
-		$query->set( 'posts_per_page', ph_get( 'search_per_page' ) );
+		$query->set( 'posts_per_page', perf_hardening_get( 'search_per_page' ) );
 		$query->set( 'no_found_rows', true );
 		$query->set( 'ignore_sticky_posts', true );
 
-		if ( ph_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
+		if ( perf_hardening_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
 			$query->set( 'search_columns', array( 'post_title', 'post_excerpt' ) );
 		}
 
-		if ( ph_get( 'search_max_pages' ) > 0 && (int) $query->get( 'paged' ) > ph_get( 'search_max_pages' ) ) {
+		if ( perf_hardening_get( 'search_max_pages' ) > 0 && (int) $query->get( 'paged' ) > perf_hardening_get( 'search_max_pages' ) ) {
 			$query->set( 'post__in', array( 0 ) );
 		}
 	}, 20 );
@@ -192,7 +192,7 @@ if ( ph_get( 'search_hardening' ) ) {
  * SQL_CALC_FOUND_ROWS 會強迫 MySQL 掃完全部符合列才回傳一頁。
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'archive_hardening' ) ) {
+if ( perf_hardening_get( 'archive_hardening' ) ) {
 
 	add_action( 'pre_get_posts', function ( $query ) {
 
@@ -202,7 +202,7 @@ if ( ph_get( 'archive_hardening' ) ) {
 
 		if ( $query->is_tag() || $query->is_tax() || $query->is_author() || $query->is_date() ) {
 			$query->set( 'no_found_rows', true );
-			$query->set( 'posts_per_page', ph_get( 'archive_per_page' ) );
+			$query->set( 'posts_per_page', perf_hardening_get( 'archive_per_page' ) );
 		}
 	}, 20 );
 
@@ -251,21 +251,21 @@ add_action( 'pre_get_posts', function ( $query ) {
  * 3. 端點層級的快取標頭與 Feed 策略
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'cache_headers' ) ) {
+if ( perf_hardening_get( 'cache_headers' ) ) {
 
 	add_action( 'template_redirect', function () {
 
 		// 3a. Feed。
 		if ( is_feed() ) {
 
-			$low_value = ( is_author() && ph_get( 'author_hardening' ) )
+			$low_value = ( is_author() && perf_hardening_get( 'author_hardening' ) )
 				|| is_search() || is_comment_feed();
 
-			if ( 'off' === ph_get( 'feed_mode' ) ) {
+			if ( 'off' === perf_hardening_get( 'feed_mode' ) ) {
 				$low_value = $low_value || is_tag();
 			}
 
-			if ( 'cache' !== ph_get( 'feed_mode' ) && $low_value ) {
+			if ( 'cache' !== perf_hardening_get( 'feed_mode' ) && $low_value ) {
 				status_header( 410 );
 				header( 'Cache-Control: public, max-age=86400, s-maxage=604800' );
 				header( 'X-Robots-Tag: noindex, nofollow', true );
@@ -292,9 +292,9 @@ if ( ph_get( 'cache_headers' ) ) {
 
 		// 3c. 標籤頁：薄內容標記 noindex，避免搜尋引擎反覆回爬。
 		if ( is_tag() ) {
-			if ( ph_get( 'thin_term_count' ) > 0 ) {
+			if ( perf_hardening_get( 'thin_term_count' ) > 0 ) {
 				$term = get_queried_object();
-				if ( $term instanceof WP_Term && $term->count <= ph_get( 'thin_term_count' ) ) {
+				if ( $term instanceof WP_Term && $term->count <= perf_hardening_get( 'thin_term_count' ) ) {
 					header( 'X-Robots-Tag: noindex, follow', true );
 				}
 			}
@@ -303,11 +303,11 @@ if ( ph_get( 'cache_headers' ) ) {
 		}
 
 		// 3d. 作者頁與深層分頁。
-		$deep = ph_get( 'deep_page_noindex' ) > 0
+		$deep = perf_hardening_get( 'deep_page_noindex' ) > 0
 			&& is_archive()
-			&& (int) get_query_var( 'paged' ) > ph_get( 'deep_page_noindex' );
+			&& (int) get_query_var( 'paged' ) > perf_hardening_get( 'deep_page_noindex' );
 
-		if ( ( is_author() && ph_get( 'author_hardening' ) ) || $deep ) {
+		if ( ( is_author() && perf_hardening_get( 'author_hardening' ) ) || $deep ) {
 			header( 'X-Robots-Tag: noindex, follow', true );
 		}
 	}, 1 );
@@ -328,14 +328,14 @@ if ( ph_get( 'cache_headers' ) ) {
 }
 
 add_filter( 'pre_option_posts_per_rss', function ( $value ) {
-	$items = (int) ph_get( 'tag_feed_items' );
+	$items = (int) perf_hardening_get( 'tag_feed_items' );
 	if ( $items > 0 && is_feed() && is_tag() ) {
 		return $items;
 	}
 	return $value;
 } );
 
-if ( ph_get( 'remove_feed_links' ) ) {
+if ( perf_hardening_get( 'remove_feed_links' ) ) {
 	// 移除 tag / author / comment feed 的 discovery link。
 	// 注意：這同時會移除分類 Feed 的 discovery link，已知合作夥伴的既有 URL 不受影響。
 	remove_action( 'wp_head', 'feed_links_extra', 3 );
@@ -347,16 +347,16 @@ if ( ph_get( 'remove_feed_links' ) ) {
  * 後台為真實編輯者使用，不可封鎖，僅降低頻率。
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'heartbeat_tuning' ) ) {
+if ( perf_hardening_get( 'heartbeat_tuning' ) ) {
 
 	add_filter( 'heartbeat_settings', function ( $settings ) {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
 		$settings['interval'] = ( $screen && 'edit' === $screen->base )
-			? ph_get( 'heartbeat_list' )
-			: ph_get( 'heartbeat_edit' );
+			? perf_hardening_get( 'heartbeat_list' )
+			: perf_hardening_get( 'heartbeat_edit' );
 
-		$settings['minimalInterval'] = ph_get( 'heartbeat_edit' );
+		$settings['minimalInterval'] = perf_hardening_get( 'heartbeat_edit' );
 
 		return $settings;
 	} );
@@ -375,7 +375,7 @@ if ( ph_get( 'heartbeat_tuning' ) ) {
  * /{permalink}/embed/ 是常見的爬蟲深淵，且多數新聞站並不依賴它。
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'disable_oembed' ) ) {
+if ( perf_hardening_get( 'disable_oembed' ) ) {
 
 	add_action( 'init', function () {
 		remove_action( 'rest_api_init', 'wp_oembed_register_route' );
@@ -407,10 +407,10 @@ if ( ph_get( 'disable_oembed' ) ) {
  * ---------------------------------------------------------------------- */
 
 add_filter( 'wp_feed_cache_transient_lifetime', function () {
-	return (int) ph_get( 'feed_cache_hours' ) * HOUR_IN_SECONDS;
+	return (int) perf_hardening_get( 'feed_cache_hours' ) * HOUR_IN_SECONDS;
 }, 100 );
 
-if ( ph_get( 'http_throttle' ) ) {
+if ( perf_hardening_get( 'http_throttle' ) ) {
 
 	add_filter( 'http_request_args', function ( $args, $url ) {
 
@@ -427,7 +427,7 @@ if ( ph_get( 'http_throttle' ) ) {
 			return $args;
 		}
 
-		$cap = (int) ph_get( 'frontend_timeout' );
+		$cap = (int) perf_hardening_get( 'frontend_timeout' );
 
 		$args['timeout'] = min( (int) ( $args['timeout'] ?? $cap ), $cap );
 
@@ -446,7 +446,7 @@ add_action( 'wp_dashboard_setup', function () {
  * 7. XML-RPC / pingback / REST 使用者列舉
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'disable_xmlrpc' ) ) {
+if ( perf_hardening_get( 'disable_xmlrpc' ) ) {
 
 	// xmlrpc_enabled 只擋「需要驗證」的方法，pingback.ping 與
 	// system.* 等匿名方法不受影響，必須連方法表一併清空。
@@ -459,7 +459,7 @@ if ( ph_get( 'disable_xmlrpc' ) ) {
 	} );
 }
 
-if ( ph_get( 'block_user_enum' ) ) {
+if ( perf_hardening_get( 'block_user_enum' ) ) {
 
 	add_filter( 'rest_endpoints', function ( $endpoints ) {
 		if ( is_user_logged_in() ) {
@@ -478,7 +478,7 @@ if ( ph_get( 'block_user_enum' ) ) {
  * Sitemap 位址自動偵測 Yoast / Rank Math，否則採用核心的 wp-sitemap.xml。
  * ---------------------------------------------------------------------- */
 
-if ( ph_get( 'manage_robots_txt' ) ) {
+if ( perf_hardening_get( 'manage_robots_txt' ) ) {
 
 	add_filter( 'robots_txt', function ( $output, $public ) {
 
@@ -501,7 +501,7 @@ if ( ph_get( 'manage_robots_txt' ) ) {
 			'Disallow: /tag/*/feed/',
 		);
 
-		if ( ph_get( 'author_hardening' ) ) {
+		if ( perf_hardening_get( 'author_hardening' ) ) {
 			$rules[] = 'Disallow: /author/';
 		}
 
@@ -512,7 +512,7 @@ if ( ph_get( 'manage_robots_txt' ) ) {
 			'',
 		) );
 
-		foreach ( apply_filters( 'ph_blocked_bots', array( 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot' ) ) as $bot ) {
+		foreach ( apply_filters( 'perf_hardening_blocked_bots', array( 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot' ) ) as $bot ) {
 			$rules[] = 'User-agent: ' . $bot;
 			$rules[] = 'Disallow: /';
 			$rules[] = '';
@@ -525,7 +525,7 @@ if ( ph_get( 'manage_robots_txt' ) ) {
 		 *
 		 * @param array $rules 每個元素為一行。
 		 */
-		$rules = apply_filters( 'ph_robots_txt_rules', $rules );
+		$rules = apply_filters( 'perf_hardening_robots_txt_rules', $rules );
 
 		return implode( "\n", $rules ) . "\n";
 	}, 10, 2 );
@@ -554,7 +554,7 @@ register_deactivation_hook( __FILE__, function () {
 if ( is_admin() ) {
 
 	/** 欄位定義：區塊標題 => [ 鍵名 => [ 型別, 標籤, 說明 ] ]。 */
-	function ph_settings_fields() {
+	function perf_hardening_settings_fields() {
 		return array(
 			__( 'Feature switches', 'perf-hardening' ) => array(
 				'search_hardening'  => array( 'bool', __( 'Search hardening', 'perf-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'perf-hardening' ) ),
@@ -600,7 +600,7 @@ if ( is_admin() ) {
 			__( 'Performance Hardening', 'perf-hardening' ),
 			'manage_options',
 			'perf-hardening',
-			'ph_render_settings_page'
+			'perf_hardening_render_settings_page'
 		);
 	} );
 
@@ -615,7 +615,7 @@ if ( is_admin() ) {
 		}
 		check_admin_referer( 'ph_save_settings', 'ph_settings_nonce' );
 
-		$defaults = ph_defaults();
+		$defaults = perf_hardening_defaults();
 		$saved    = get_option( 'perf_hardening_settings' );
 		$old      = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
 		$post     = wp_unslash( $_POST );
@@ -664,17 +664,19 @@ if ( is_admin() ) {
 		exit;
 	} );
 
-	function ph_render_settings_page() {
+	function perf_hardening_render_settings_page() {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
 		$saved = get_option( 'perf_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), ph_defaults() );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), perf_hardening_defaults() );
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Performance Hardening', 'perf-hardening' ) . '</h1>';
 
+		// 僅用於顯示儲存成功通知，不處理任何資料，毋需 nonce。
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['updated'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>'
 				. esc_html__( 'Settings saved. Cached pages will reflect changes after the cache expires or is purged.', 'perf-hardening' )
@@ -693,7 +695,7 @@ if ( is_admin() ) {
 		echo '<form method="post">';
 		wp_nonce_field( 'ph_save_settings', 'ph_settings_nonce' );
 
-		foreach ( ph_settings_fields() as $section => $fields ) {
+		foreach ( perf_hardening_settings_fields() as $section => $fields ) {
 
 			echo '<h2>' . esc_html( $section ) . '</h2>';
 			echo '<table class="form-table" role="presentation">';

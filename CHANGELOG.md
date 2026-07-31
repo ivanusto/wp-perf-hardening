@@ -3,6 +3,19 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.3.0] - 2026-07-31
+
+依官方 Plugin Check（PCP）檢測結果調整，為上架 WordPress.org 準備。
+
+### 變更（不相容）
+
+- 全域函式與 filter hook 前綴由 `ph_` 改為 `perf_hardening_`：
+  `perf_hardening_reject_search`、`perf_hardening_search_post_types`、
+  `perf_hardening_blocked_bots`、`perf_hardening_robots_txt_rules`。
+  **`PH_*` 常數不變**，既有站台的 wp-config.php 設定不受影響
+- readme.txt 短描述縮短至 150 字元內
+- `.gitattributes` 加入 `export-ignore`，`git archive` 產出的發佈包不含開發檔案
+
 ## [1.2.0] - 2026-07-31
 
 ### 新增
