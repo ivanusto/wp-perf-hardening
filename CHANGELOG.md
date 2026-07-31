@@ -1,0 +1,25 @@
+# Changelog
+
+本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
+版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
+
+## [1.0.0] - 2026-07-31
+
+首次發布。由單一站台的實務調校整理為可跨站重用的版本，所有行為改由常數控制。
+
+### 新增
+
+- 站內搜尋防護：長度、詞數、非法 UTF-8 與非中日韓長字串的垃圾判定；限縮 `post_type` / `post_status`；
+  選擇性只比對標題與摘要（WP 6.2+ 的 `search_columns`）；限制結果頁數
+- 封存頁查詢瘦身：tag / tax / author / date 封存頁關閉 `SQL_CALC_FOUND_ROWS`；
+  標籤／分類法頁以 term count 還原 `max_num_pages`，分頁連結不受影響
+- 次要查詢一律套用 `no_found_rows`
+- 端點層級快取標頭：Feed、搜尋頁、標籤頁、作者頁、深層分頁、404
+- Feed 策略三段式設定（`cache` / `strict` / `off`）
+- 薄內容標籤頁與深層分頁的 `X-Robots-Tag: noindex`
+- Heartbeat 調頻，前台停用
+- 停用 oEmbed 端點與 `/embed/` 路由
+- 停用 XML-RPC、pingback、未登入者的 REST 使用者列舉
+- 前台外部 HTTP 請求逾時上限（排除 REST / AJAX / cron / WP-CLI / 已登入者）
+- 虛擬 robots.txt，自動偵測 Yoast / Rank Math 或核心 sitemap 位址
+- Filter：`ph_reject_search`、`ph_search_post_types`、`ph_blocked_bots`、`ph_robots_txt_rules`
