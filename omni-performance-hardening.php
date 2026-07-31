@@ -8,8 +8,8 @@
  * Requires at least: 5.9
  * Author:       ivanusto
  * Author URI:   https://github.com/ivanusto
- * License:      GPL-2.0-or-later
- * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:  omni-performance-hardening
  * Domain Path:  /languages
  *
