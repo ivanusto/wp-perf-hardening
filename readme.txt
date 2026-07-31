@@ -4,7 +4,7 @@ Tags: performance, cache, search, feed, xml-rpc
 Requires at least: 5.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.6.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,7 +15,7 @@ Tames expensive WordPress endpoints — search scans, archive queries, low-value
 Built for large, crawl-heavy content sites (news, media, aggregators) where bot traffic on dynamic endpoints eats database CPU and PHP-FPM workers.
 
 * **Search hardening** — filters junk search probes (length, word count, invalid UTF-8, long non-CJK strings), narrows the query to indexed columns, optionally matches titles/excerpts only (WP 6.2+).
-* **Archive slimming** — drops `SQL_CALC_FOUND_ROWS` on tag/author/date archives and all secondary queries; tag archive pagination is restored from the stored term count at zero cost.
+* **Archive slimming** — drops `SQL_CALC_FOUND_ROWS` on tag/author/date archives; tag archive pagination is restored from the stored term count at zero cost. The same optimisation for widget and page-builder queries is available as an opt-in setting.
 * **Endpoint cache headers** — correct `Cache-Control` / `X-Robots-Tag` for feeds, search, tag pages, author pages, deep pagination and 404s, so your CDN can absorb bot traffic.
 * **Feed policy** — three modes (cache / strict / off) for low-value feeds; author, search and comment feeds can return 410.
 * **Author page hardening** — a single switch for author-page noindex, author feed 410 and the robots.txt `/author/` block. Off by default, since most sites want author archives indexed.
@@ -43,11 +43,18 @@ Full documentation (Traditional Chinese): https://github.com/ivanusto/wp-perf-ha
 
 The main feed and category feeds are always kept. Check which feed paths your partners subscribe to before choosing the `off` feed mode. With the defaults, `strict` mode only returns 410 for search and comment feeds; author feeds are included only if you enable author page hardening.
 
+= A post list on my site went blank. =
+
+Turn off "Skip counts on widget queries". That setting drops the total-row count on secondary queries, which sets `found_posts` to 0; page builders that read that value — Elementor's post widgets in particular — stop rendering the list entirely. It is off by default for this reason.
+
 = A plugin making external API calls started timing out. =
 
 The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "Frontend external request throttle" or raise the timeout.
 
 == Changelog ==
+
+= 1.6.0 =
+* Skipping row counts on widget and page-builder queries is now an opt-in setting, off by default. It previously always applied and could silently blank out post lists in themes and page builders that read `found_posts` (Elementor's post widgets among them).
 
 = 1.5.0 =
 * Author page hardening is now off by default — most sites want their author archives indexed. Enable it in the settings when you don't.

@@ -3,6 +3,18 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.6.0] - 2026-07-31
+
+### 修正
+
+- **次要查詢的 `no_found_rows` 改為可選設定並預設關閉**（`PH_SECONDARY_NO_FOUND_ROWS`）。
+  此行為原本無條件套用且沒有開關，會使 `found_posts` 與 `max_num_pages` 為 `0`；
+  凡是依該值判斷是否輸出清單的佈景主題或頁面建構器都會整塊變空白——已確認
+  **Elementor 的文章 widget 在 `found_posts` 為 `0` 時會直接中止渲染**，
+  連容器與「找不到文章」提示都不會產生，站長無從得知原因。
+  於實際站台（OceanWP + Elementor Pro）重現並修正。
+  需要此優化者可於後台開啟，開啟後請確認站上所有文章清單仍正常顯示
+
 ## [1.5.0] - 2026-07-31
 
 送審 WordPress.org 前的最後調整。

@@ -3,7 +3,7 @@
  * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.5.0
+ * Version:      1.6.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -68,41 +68,43 @@ add_action( 'init', function () {
 function omni_performance_hardening_defaults() {
 	return array(
 		// 功能開關。
-		'search_hardening'  => true,
-		'archive_hardening' => true,
-		'cache_headers'     => true,
+		'search_hardening'        => true,
+		'archive_hardening'       => true,
+		// 會使 found_posts 為 0，可能讓頁面建構器的清單整個不渲染，故預設關閉。
+		'secondary_no_found_rows' => false,
+		'cache_headers'           => true,
 		// 多數站台需要作者頁，預設不收斂；需要時再開啟。
-		'author_hardening'  => false,
-		'heartbeat_tuning'  => true,
-		'disable_oembed'    => true,
-		'disable_xmlrpc'    => true,
-		'http_throttle'     => true,
-		'manage_robots_txt' => true,
-		'block_user_enum'   => true,
-		'dashboard_widgets' => true,
+		'author_hardening'        => false,
+		'heartbeat_tuning'        => true,
+		'disable_oembed'          => true,
+		'disable_xmlrpc'          => true,
+		'http_throttle'           => true,
+		'manage_robots_txt'       => true,
+		'block_user_enum'         => true,
+		'dashboard_widgets'       => true,
 
 		// 搜尋防護。
-		'search_min_len'    => 2,
-		'search_max_len'    => 40,
-		'search_max_words'  => 4,
-		'search_max_pages'  => 3,
-		'search_per_page'   => 10,
-		'search_title_only' => true,
-		'search_latin_max'  => 20,
+		'search_min_len'          => 2,
+		'search_max_len'          => 40,
+		'search_max_words'        => 4,
+		'search_max_pages'        => 3,
+		'search_per_page'         => 10,
+		'search_title_only'       => true,
+		'search_latin_max'        => 20,
 
 		// 封存頁與 Feed。
-		'archive_per_page'  => 10,
-		'thin_term_count'   => 2,
-		'deep_page_noindex' => 5,
-		'feed_mode'         => 'strict',
-		'remove_feed_links' => true,
-		'tag_feed_items'    => 10,
-		'feed_cache_hours'  => 6,
+		'archive_per_page'        => 10,
+		'thin_term_count'         => 2,
+		'deep_page_noindex'       => 5,
+		'feed_mode'               => 'strict',
+		'remove_feed_links'       => true,
+		'tag_feed_items'          => 10,
+		'feed_cache_hours'        => 6,
 
 		// 其他。
-		'frontend_timeout'  => 5,
-		'heartbeat_edit'    => 60,
-		'heartbeat_list'    => 120,
+		'frontend_timeout'        => 5,
+		'heartbeat_edit'          => 60,
+		'heartbeat_list'          => 120,
 	);
 }
 
@@ -245,20 +247,28 @@ if ( omni_performance_hardening_get( 'archive_hardening' ) ) {
 }
 
 /**
- * 次要查詢一律關閉 SQL_CALC_FOUND_ROWS。
- * 側邊欄、相關文章、熱門文章等 widget 不需要總筆數。
- * 若某個次要查詢確實需要分頁，於該處明確設定 'no_found_rows' => false。
+ * 次要查詢關閉 SQL_CALC_FOUND_ROWS（預設關閉，需明確開啟）。
+ *
+ * 側邊欄、相關文章、熱門文章等 widget 並不需要總筆數，省下的全表掃描相當可觀。
+ *
+ * 但 no_found_rows 會使 found_posts 與 max_num_pages 為 0，而不少佈景主題與
+ * 頁面建構器會據此決定是否輸出清單——例如 Elementor 的文章 widget 在
+ * found_posts 為 0 時會直接中止渲染，整個區塊連容器都不會產生，站長只會
+ * 看到空白而無從得知原因。因此預設關閉，由使用者確認版面正常後再開啟。
  */
-add_action( 'pre_get_posts', function ( $query ) {
+if ( omni_performance_hardening_get( 'secondary_no_found_rows' ) ) {
 
-	if ( is_admin() || $query->is_main_query() ) {
-		return;
-	}
+	add_action( 'pre_get_posts', function ( $query ) {
 
-	if ( ! isset( $query->query_vars['no_found_rows'] ) || false === $query->query_vars['no_found_rows'] ) {
-		$query->set( 'no_found_rows', true );
-	}
-}, 5 );
+		if ( is_admin() || $query->is_main_query() ) {
+			return;
+		}
+
+		if ( ! isset( $query->query_vars['no_found_rows'] ) || false === $query->query_vars['no_found_rows'] ) {
+			$query->set( 'no_found_rows', true );
+		}
+	}, 5 );
+}
 
 /* -------------------------------------------------------------------------
  * 3. 端點層級的快取標頭與 Feed 策略
@@ -575,6 +585,7 @@ if ( is_admin() ) {
 			__( 'Feature switches', 'omni-performance-hardening' ) => array(
 				'search_hardening'  => array( 'bool', __( 'Search hardening', 'omni-performance-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'omni-performance-hardening' ) ),
 				'archive_hardening' => array( 'bool', __( 'Archive query slimming', 'omni-performance-hardening' ), __( 'Drop SQL_CALC_FOUND_ROWS on tag, author and date archives', 'omni-performance-hardening' ) ),
+				'secondary_no_found_rows' => array( 'bool', __( 'Skip counts on widget queries', 'omni-performance-hardening' ), __( 'Drops SQL_CALC_FOUND_ROWS on sidebar, related-post and page-builder queries. Off by default: it sets found_posts to 0, and themes or page builders that read that value — Elementor post widgets, custom pagination — will render an empty list. Turn it on, then check that every post listing on your site still appears', 'omni-performance-hardening' ) ),
 				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'omni-performance-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'omni-performance-hardening' ) ),
 				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'omni-performance-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Off by default; enable it only on sites that do not want author archives in search results', 'omni-performance-hardening' ) ),
 				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'omni-performance-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'omni-performance-hardening' ) ),
