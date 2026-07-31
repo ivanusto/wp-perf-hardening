@@ -1,10 +1,10 @@
-=== Performance Hardening ===
+=== Omni Performance Hardening ===
 Contributors: ivanusto
 Tags: performance, cache, search, feed, xml-rpc
 Requires at least: 5.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,16 +21,18 @@ Built for large, crawl-heavy content sites (news, media, aggregators) where bot 
 * **Author page hardening** — a single switch for author-page noindex, author feed 410 and the robots.txt `/author/` block; turn it off on sites that want author archives indexed.
 * **Heartbeat tuning, oEmbed/XML-RPC disabling, REST user enumeration blocking, frontend external HTTP timeout cap, managed virtual robots.txt.**
 
-Settings live in **Settings → 效能強化** (admin UI). Any setting can also be pinned via a `PH_*` constant in `wp-config.php`; pinned constants lock the corresponding admin field. Priority: constants > admin settings > defaults.
+Settings live in **Settings → Omni Performance Hardening** (admin UI). Any setting can also be pinned via a `PH_*` constant in `wp-config.php`; pinned constants lock the corresponding admin field. Priority: constants > admin settings > defaults.
 
-The plugin also works as a must-use plugin: drop `perf-hardening.php` into `wp-content/mu-plugins/`.
+The plugin also works as a must-use plugin: drop `omni-performance-hardening.php` into `wp-content/mu-plugins/`.
+
+**Sister plugin**: [Omni Webmaster SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/) — SEO and webmaster tooling from the same team. This plugin keeps your site fast and crawl-efficient; the SEO suite handles visibility and indexing.
 
 Full documentation (Traditional Chinese): https://github.com/ivanusto/wp-perf-hardening
 
 == Installation ==
 
 1. Upload the plugin ZIP via Plugins → Add New → Upload, then activate. Rewrite rules are rebuilt automatically on activation and deactivation.
-2. Adjust parameters under Settings → 效能強化.
+2. Adjust parameters under Settings → Omni Performance Hardening.
 3. Optionally pin per-site values with `PH_*` constants in `wp-config.php` (see the GitHub README for the full list).
 
 == Frequently Asked Questions ==
@@ -41,9 +43,15 @@ The main feed and category feeds are always kept. Check which feed paths your pa
 
 = A plugin making external API calls started timing out. =
 
-The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "前台外部請求節流" or raise the timeout.
+The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "Frontend external request throttle" or raise the timeout.
 
 == Changelog ==
+
+= 1.4.0 =
+* Renamed to Omni Performance Hardening; slug and text domain are now `omni-performance-hardening`. `PH_*` wp-config constants are unchanged.
+* Global functions and filter hooks now use the `omni_performance_hardening_` prefix.
+* Bundled translations now load via load_textdomain() (Plugin Check clean); wp.org-hosted translations keep loading automatically.
+* Settings page links to the sister plugin Omni Webmaster SEO Suite.
 
 = 1.3.0 =
 * Renamed global functions and filter hooks from the `ph_` prefix to `perf_hardening_` (Plugin Check compliance). `PH_*` wp-config constants are unchanged.

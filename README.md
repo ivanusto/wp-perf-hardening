@@ -1,4 +1,4 @@
-# WordPress Performance Hardening
+# Omni Performance Hardening
 
 一支單檔外掛（可作為一般外掛或 must-use plugin 安裝），用來收斂 WordPress 站台上最消耗資源的幾類請求：站內搜尋的全表掃描、封存頁的 `SQL_CALC_FOUND_ROWS`、低價值 Feed 與 oEmbed 端點，並為 CDN 提供正確的快取標頭。
 
@@ -20,7 +20,7 @@
 
 1. 從 GitHub 下載 ZIP（Code → Download ZIP），或抓 [Releases](https://github.com/ivanusto/wp-perf-hardening/releases) 的外掛壓縮檔
 2. 後台「外掛 → 安裝外掛 → 上傳外掛」上傳並啟用
-3. 於「設定 → 效能強化」逐項調整參數
+3. 於「設定 → Omni 效能強化」逐項調整參數
 
 啟用與停用時會自動重建 rewrite rules，無需手動 flush。
 
@@ -28,15 +28,15 @@
 
 ```bash
 # must-use plugin 無需啟用，放進去即生效
-sudo cp perf-hardening.php /var/www/html/wp-content/mu-plugins/
-sudo chown www-data:www-data /var/www/html/wp-content/mu-plugins/perf-hardening.php
-sudo php -l /var/www/html/wp-content/mu-plugins/perf-hardening.php
+sudo cp omni-performance-hardening.php /var/www/html/wp-content/mu-plugins/
+sudo chown www-data:www-data /var/www/html/wp-content/mu-plugins/omni-performance-hardening.php
+sudo php -l /var/www/html/wp-content/mu-plugins/omni-performance-hardening.php
 
 # 重建 rewrite rules（oEmbed 路由移除後必要）
 sudo -u www-data wp rewrite flush --path=/var/www/html
 ```
 
-mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種方式同時安裝時只有先載入的 mu-plugin 版生效。
+mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩種方式同時安裝時只有先載入的 mu-plugin 版生效。
 
 介面源語言為英文，`languages/` 內附繁體中文（zh_TW）翻譯，依站台語系自動切換。mu-plugin 模式如需翻譯，請將 `languages/` 資料夾一併放入 `mu-plugins/`。
 
@@ -47,7 +47,7 @@ mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種�
 參數有三層優先序：
 
 1. **`wp-config.php` 常數**（最高）— 定義於「That's all, stop editing!」註解之前，適合用版本控管配置的站台；已定義的常數會鎖定後台對應欄位
-2. **後台「設定 → 效能強化」** — 存於 options，適合交給站台管理員自行調整
+2. **後台「設定 → Omni 效能強化」** — 存於 options，適合交給站台管理員自行調整
 3. **內建預設值**
 
 常數命名規則為 `PH_` + 下表鍵名大寫，例如後台的「作者頁收斂」對應 `PH_AUTHOR_HARDENING`。
@@ -115,10 +115,10 @@ mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種�
 
 | Filter | 說明 |
 |---|---|
-| `perf_hardening_reject_search` | `( bool $reject, string $term, WP_Query $query )` 覆寫垃圾搜尋判定 |
-| `perf_hardening_search_post_types` | `( array $post_types )` 調整搜尋涵蓋的 post type |
-| `perf_hardening_blocked_bots` | `( array $bots )` robots.txt 中封鎖的 UA 清單 |
-| `perf_hardening_robots_txt_rules` | `( array $rules )` 覆寫整份 robots.txt，每個元素為一行 |
+| `omni_performance_hardening_reject_search` | `( bool $reject, string $term, WP_Query $query )` 覆寫垃圾搜尋判定 |
+| `omni_performance_hardening_search_post_types` | `( array $post_types )` 調整搜尋涵蓋的 post type |
+| `omni_performance_hardening_blocked_bots` | `( array $bots )` robots.txt 中封鎖的 UA 清單 |
+| `omni_performance_hardening_robots_txt_rules` | `( array $rules )` 覆寫整份 robots.txt，每個元素為一行 |
 
 ## 已知的相容性事項
 
@@ -169,6 +169,10 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 - **CDN 未快取 HTML** — 多數 CDN 預設不快取 HTML，需明確建立快取規則
 - **軟 404** — 主題若將失效網址重導向到回應 200 的頁面，搜尋引擎會永久保留失效索引
 - **原站可被繞過 CDN 直連** — 需以共用密鑰標頭或防火牆政策限制來源
+
+## 姊妹作品
+
+[Omni Webmaster SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/)（已上架 WordPress.org）為同團隊出品的 SEO 與站長工具，與本外掛互補：本外掛負責效能與爬取收斂，SEO Suite 負責曝光與索引。
 
 ## 授權
 

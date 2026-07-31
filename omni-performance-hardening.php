@@ -1,21 +1,21 @@
 <?php
 /**
- * Plugin Name:  Performance Hardening
+ * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.3.0
+ * Version:      1.4.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
  * Author URI:   https://github.com/ivanusto
  * License:      GPL-2.0-or-later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:  perf-hardening
+ * Text Domain:  omni-performance-hardening
  * Domain Path:  /languages
  *
  * 兩種安裝方式：
  * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → 效能強化」調整參數。
- * 2. mu-plugin：置於 wp-content/mu-plugins/perf-hardening.php，無需啟用。
+ * 2. mu-plugin：置於 wp-content/mu-plugins/omni-performance-hardening.php，無需啟用。
  *    部署後請至「設定 → 固定網址」按一次儲存，或執行 `wp rewrite flush`。
  *
  * 參數優先序：wp-config.php 的 PH_* 常數 > 後台設定 > 預設值。
@@ -36,12 +36,23 @@ define( 'PH_LOADED', true );
 
 // 載入翻譯：源語言為英文，languages/ 內附 zh_TW。
 // mu-plugin 模式需將 languages/ 一併放入 mu-plugins/。
+// wp.org 託管的翻譯（WP_LANG_DIR/plugins）自 WP 4.6 起由核心自動載入，
+// 此處僅補載外掛內附的 languages/，供 GitHub 下載安裝等非目錄來源使用。
 add_action( 'init', function () {
+
 	if ( defined( 'WPMU_PLUGIN_DIR' )
 		&& 0 === strpos( wp_normalize_path( __FILE__ ), wp_normalize_path( WPMU_PLUGIN_DIR ) ) ) {
-		load_muplugin_textdomain( 'perf-hardening', 'languages' );
-	} else {
-		load_plugin_textdomain( 'perf-hardening', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+		load_muplugin_textdomain( 'omni-performance-hardening', 'languages' );
+		return;
+	}
+
+	if ( ! is_textdomain_loaded( 'omni-performance-hardening' ) ) {
+		$locale = determine_locale();
+		load_textdomain(
+			'omni-performance-hardening',
+			__DIR__ . '/languages/omni-performance-hardening-' . $locale . '.mo',
+			$locale
+		);
 	}
 } );
 
@@ -54,7 +65,7 @@ add_action( 'init', function () {
  *
  * 鍵名同時對應 wp-config.php 常數（PH_ + 大寫鍵名）與後台欄位。
  */
-function perf_hardening_defaults() {
+function omni_performance_hardening_defaults() {
 	return array(
 		// 功能開關。
 		'search_hardening'  => true,
@@ -96,10 +107,10 @@ function perf_hardening_defaults() {
 /**
  * 取得單一設定值。
  *
- * @param string $key perf_hardening_defaults() 中的鍵名。
+ * @param string $key omni_performance_hardening_defaults() 中的鍵名。
  * @return mixed
  */
-function perf_hardening_get( $key ) {
+function omni_performance_hardening_get( $key ) {
 	static $opts = null;
 
 	$const = 'PH_' . strtoupper( $key );
@@ -108,8 +119,8 @@ function perf_hardening_get( $key ) {
 	}
 
 	if ( null === $opts ) {
-		$saved = get_option( 'perf_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), perf_hardening_defaults() );
+		$saved = get_option( 'omni_performance_hardening_settings' );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), omni_performance_hardening_defaults() );
 	}
 
 	return isset( $opts[ $key ] ) ? $opts[ $key ] : null;
@@ -122,7 +133,7 @@ function perf_hardening_get( $key ) {
  * 在數萬列的站台上單筆查詢可達十秒等級，且是機器人最常探測的端點。
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'search_hardening' ) ) {
+if ( omni_performance_hardening_get( 'search_hardening' ) ) {
 
 	add_action( 'parse_query', function ( $query ) {
 
@@ -133,7 +144,7 @@ if ( perf_hardening_get( 'search_hardening' ) ) {
 		$term = trim( (string) $query->get( 's' ) );
 		$len  = function_exists( 'mb_strlen' ) ? mb_strlen( $term, 'UTF-8' ) : strlen( $term );
 
-		$reject = ( $len < perf_hardening_get( 'search_min_len' ) || $len > perf_hardening_get( 'search_max_len' ) );
+		$reject = ( $len < omni_performance_hardening_get( 'search_min_len' ) || $len > omni_performance_hardening_get( 'search_max_len' ) );
 
 		// 非法 UTF-8 一律視為機器探測。
 		if ( ! $reject && function_exists( 'mb_check_encoding' ) && ! mb_check_encoding( $term, 'UTF-8' ) ) {
@@ -141,14 +152,14 @@ if ( perf_hardening_get( 'search_hardening' ) ) {
 		}
 
 		// 詞數界限：垃圾探測多為長句關鍵字。
-		if ( ! $reject && perf_hardening_get( 'search_max_words' ) > 0
-			&& preg_match_all( '/\S+/u', $term ) > perf_hardening_get( 'search_max_words' ) ) {
+		if ( ! $reject && omni_performance_hardening_get( 'search_max_words' ) > 0
+			&& preg_match_all( '/\S+/u', $term ) > omni_performance_hardening_get( 'search_max_words' ) ) {
 			$reject = true;
 		}
 
 		// 不含中日韓字元的長字串視為垃圾探測（仍允許 AI、Netflix 等短英文詞）。
-		if ( ! $reject && perf_hardening_get( 'search_latin_max' ) > 0
-			&& $len > perf_hardening_get( 'search_latin_max' )
+		if ( ! $reject && omni_performance_hardening_get( 'search_latin_max' ) > 0
+			&& $len > omni_performance_hardening_get( 'search_latin_max' )
 			&& ! preg_match( '/[\x{4e00}-\x{9fff}\x{3040}-\x{30ff}\x{ac00}-\x{d7af}]/u', $term ) ) {
 			$reject = true;
 		}
@@ -160,7 +171,7 @@ if ( perf_hardening_get( 'search_hardening' ) ) {
 		 * @param string   $term   搜尋關鍵字。
 		 * @param WP_Query $query  查詢物件。
 		 */
-		$reject = (bool) apply_filters( 'perf_hardening_reject_search', $reject, $term, $query );
+		$reject = (bool) apply_filters( 'omni_performance_hardening_reject_search', $reject, $term, $query );
 
 		if ( $reject ) {
 			$query->set( 'post__in', array( 0 ) );
@@ -169,17 +180,17 @@ if ( perf_hardening_get( 'search_hardening' ) ) {
 		}
 
 		// 限縮查詢範圍，讓 MySQL 得以先用 type_status_date 索引收斂。
-		$query->set( 'post_type', apply_filters( 'perf_hardening_search_post_types', array( 'post' ) ) );
+		$query->set( 'post_type', apply_filters( 'omni_performance_hardening_search_post_types', array( 'post' ) ) );
 		$query->set( 'post_status', 'publish' );
-		$query->set( 'posts_per_page', perf_hardening_get( 'search_per_page' ) );
+		$query->set( 'posts_per_page', omni_performance_hardening_get( 'search_per_page' ) );
 		$query->set( 'no_found_rows', true );
 		$query->set( 'ignore_sticky_posts', true );
 
-		if ( perf_hardening_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
+		if ( omni_performance_hardening_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
 			$query->set( 'search_columns', array( 'post_title', 'post_excerpt' ) );
 		}
 
-		if ( perf_hardening_get( 'search_max_pages' ) > 0 && (int) $query->get( 'paged' ) > perf_hardening_get( 'search_max_pages' ) ) {
+		if ( omni_performance_hardening_get( 'search_max_pages' ) > 0 && (int) $query->get( 'paged' ) > omni_performance_hardening_get( 'search_max_pages' ) ) {
 			$query->set( 'post__in', array( 0 ) );
 		}
 	}, 20 );
@@ -192,7 +203,7 @@ if ( perf_hardening_get( 'search_hardening' ) ) {
  * SQL_CALC_FOUND_ROWS 會強迫 MySQL 掃完全部符合列才回傳一頁。
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'archive_hardening' ) ) {
+if ( omni_performance_hardening_get( 'archive_hardening' ) ) {
 
 	add_action( 'pre_get_posts', function ( $query ) {
 
@@ -202,7 +213,7 @@ if ( perf_hardening_get( 'archive_hardening' ) ) {
 
 		if ( $query->is_tag() || $query->is_tax() || $query->is_author() || $query->is_date() ) {
 			$query->set( 'no_found_rows', true );
-			$query->set( 'posts_per_page', perf_hardening_get( 'archive_per_page' ) );
+			$query->set( 'posts_per_page', omni_performance_hardening_get( 'archive_per_page' ) );
 		}
 	}, 20 );
 
@@ -251,21 +262,21 @@ add_action( 'pre_get_posts', function ( $query ) {
  * 3. 端點層級的快取標頭與 Feed 策略
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'cache_headers' ) ) {
+if ( omni_performance_hardening_get( 'cache_headers' ) ) {
 
 	add_action( 'template_redirect', function () {
 
 		// 3a. Feed。
 		if ( is_feed() ) {
 
-			$low_value = ( is_author() && perf_hardening_get( 'author_hardening' ) )
+			$low_value = ( is_author() && omni_performance_hardening_get( 'author_hardening' ) )
 				|| is_search() || is_comment_feed();
 
-			if ( 'off' === perf_hardening_get( 'feed_mode' ) ) {
+			if ( 'off' === omni_performance_hardening_get( 'feed_mode' ) ) {
 				$low_value = $low_value || is_tag();
 			}
 
-			if ( 'cache' !== perf_hardening_get( 'feed_mode' ) && $low_value ) {
+			if ( 'cache' !== omni_performance_hardening_get( 'feed_mode' ) && $low_value ) {
 				status_header( 410 );
 				header( 'Cache-Control: public, max-age=86400, s-maxage=604800' );
 				header( 'X-Robots-Tag: noindex, nofollow', true );
@@ -292,9 +303,9 @@ if ( perf_hardening_get( 'cache_headers' ) ) {
 
 		// 3c. 標籤頁：薄內容標記 noindex，避免搜尋引擎反覆回爬。
 		if ( is_tag() ) {
-			if ( perf_hardening_get( 'thin_term_count' ) > 0 ) {
+			if ( omni_performance_hardening_get( 'thin_term_count' ) > 0 ) {
 				$term = get_queried_object();
-				if ( $term instanceof WP_Term && $term->count <= perf_hardening_get( 'thin_term_count' ) ) {
+				if ( $term instanceof WP_Term && $term->count <= omni_performance_hardening_get( 'thin_term_count' ) ) {
 					header( 'X-Robots-Tag: noindex, follow', true );
 				}
 			}
@@ -303,11 +314,11 @@ if ( perf_hardening_get( 'cache_headers' ) ) {
 		}
 
 		// 3d. 作者頁與深層分頁。
-		$deep = perf_hardening_get( 'deep_page_noindex' ) > 0
+		$deep = omni_performance_hardening_get( 'deep_page_noindex' ) > 0
 			&& is_archive()
-			&& (int) get_query_var( 'paged' ) > perf_hardening_get( 'deep_page_noindex' );
+			&& (int) get_query_var( 'paged' ) > omni_performance_hardening_get( 'deep_page_noindex' );
 
-		if ( ( is_author() && perf_hardening_get( 'author_hardening' ) ) || $deep ) {
+		if ( ( is_author() && omni_performance_hardening_get( 'author_hardening' ) ) || $deep ) {
 			header( 'X-Robots-Tag: noindex, follow', true );
 		}
 	}, 1 );
@@ -328,14 +339,14 @@ if ( perf_hardening_get( 'cache_headers' ) ) {
 }
 
 add_filter( 'pre_option_posts_per_rss', function ( $value ) {
-	$items = (int) perf_hardening_get( 'tag_feed_items' );
+	$items = (int) omni_performance_hardening_get( 'tag_feed_items' );
 	if ( $items > 0 && is_feed() && is_tag() ) {
 		return $items;
 	}
 	return $value;
 } );
 
-if ( perf_hardening_get( 'remove_feed_links' ) ) {
+if ( omni_performance_hardening_get( 'remove_feed_links' ) ) {
 	// 移除 tag / author / comment feed 的 discovery link。
 	// 注意：這同時會移除分類 Feed 的 discovery link，已知合作夥伴的既有 URL 不受影響。
 	remove_action( 'wp_head', 'feed_links_extra', 3 );
@@ -347,16 +358,16 @@ if ( perf_hardening_get( 'remove_feed_links' ) ) {
  * 後台為真實編輯者使用，不可封鎖，僅降低頻率。
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'heartbeat_tuning' ) ) {
+if ( omni_performance_hardening_get( 'heartbeat_tuning' ) ) {
 
 	add_filter( 'heartbeat_settings', function ( $settings ) {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
 		$settings['interval'] = ( $screen && 'edit' === $screen->base )
-			? perf_hardening_get( 'heartbeat_list' )
-			: perf_hardening_get( 'heartbeat_edit' );
+			? omni_performance_hardening_get( 'heartbeat_list' )
+			: omni_performance_hardening_get( 'heartbeat_edit' );
 
-		$settings['minimalInterval'] = perf_hardening_get( 'heartbeat_edit' );
+		$settings['minimalInterval'] = omni_performance_hardening_get( 'heartbeat_edit' );
 
 		return $settings;
 	} );
@@ -375,7 +386,7 @@ if ( perf_hardening_get( 'heartbeat_tuning' ) ) {
  * /{permalink}/embed/ 是常見的爬蟲深淵，且多數新聞站並不依賴它。
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'disable_oembed' ) ) {
+if ( omni_performance_hardening_get( 'disable_oembed' ) ) {
 
 	add_action( 'init', function () {
 		remove_action( 'rest_api_init', 'wp_oembed_register_route' );
@@ -407,10 +418,10 @@ if ( perf_hardening_get( 'disable_oembed' ) ) {
  * ---------------------------------------------------------------------- */
 
 add_filter( 'wp_feed_cache_transient_lifetime', function () {
-	return (int) perf_hardening_get( 'feed_cache_hours' ) * HOUR_IN_SECONDS;
+	return (int) omni_performance_hardening_get( 'feed_cache_hours' ) * HOUR_IN_SECONDS;
 }, 100 );
 
-if ( perf_hardening_get( 'http_throttle' ) ) {
+if ( omni_performance_hardening_get( 'http_throttle' ) ) {
 
 	add_filter( 'http_request_args', function ( $args, $url ) {
 
@@ -427,7 +438,7 @@ if ( perf_hardening_get( 'http_throttle' ) ) {
 			return $args;
 		}
 
-		$cap = (int) perf_hardening_get( 'frontend_timeout' );
+		$cap = (int) omni_performance_hardening_get( 'frontend_timeout' );
 
 		$args['timeout'] = min( (int) ( $args['timeout'] ?? $cap ), $cap );
 
@@ -446,7 +457,7 @@ add_action( 'wp_dashboard_setup', function () {
  * 7. XML-RPC / pingback / REST 使用者列舉
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'disable_xmlrpc' ) ) {
+if ( omni_performance_hardening_get( 'disable_xmlrpc' ) ) {
 
 	// xmlrpc_enabled 只擋「需要驗證」的方法，pingback.ping 與
 	// system.* 等匿名方法不受影響，必須連方法表一併清空。
@@ -459,7 +470,7 @@ if ( perf_hardening_get( 'disable_xmlrpc' ) ) {
 	} );
 }
 
-if ( perf_hardening_get( 'block_user_enum' ) ) {
+if ( omni_performance_hardening_get( 'block_user_enum' ) ) {
 
 	add_filter( 'rest_endpoints', function ( $endpoints ) {
 		if ( is_user_logged_in() ) {
@@ -478,7 +489,7 @@ if ( perf_hardening_get( 'block_user_enum' ) ) {
  * Sitemap 位址自動偵測 Yoast / Rank Math，否則採用核心的 wp-sitemap.xml。
  * ---------------------------------------------------------------------- */
 
-if ( perf_hardening_get( 'manage_robots_txt' ) ) {
+if ( omni_performance_hardening_get( 'manage_robots_txt' ) ) {
 
 	add_filter( 'robots_txt', function ( $output, $public ) {
 
@@ -501,7 +512,7 @@ if ( perf_hardening_get( 'manage_robots_txt' ) ) {
 			'Disallow: /tag/*/feed/',
 		);
 
-		if ( perf_hardening_get( 'author_hardening' ) ) {
+		if ( omni_performance_hardening_get( 'author_hardening' ) ) {
 			$rules[] = 'Disallow: /author/';
 		}
 
@@ -512,7 +523,7 @@ if ( perf_hardening_get( 'manage_robots_txt' ) ) {
 			'',
 		) );
 
-		foreach ( apply_filters( 'perf_hardening_blocked_bots', array( 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot' ) ) as $bot ) {
+		foreach ( apply_filters( 'omni_performance_hardening_blocked_bots', array( 'AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot' ) ) as $bot ) {
 			$rules[] = 'User-agent: ' . $bot;
 			$rules[] = 'Disallow: /';
 			$rules[] = '';
@@ -525,7 +536,7 @@ if ( perf_hardening_get( 'manage_robots_txt' ) ) {
 		 *
 		 * @param array $rules 每個元素為一行。
 		 */
-		$rules = apply_filters( 'perf_hardening_robots_txt_rules', $rules );
+		$rules = apply_filters( 'omni_performance_hardening_robots_txt_rules', $rules );
 
 		return implode( "\n", $rules ) . "\n";
 	}, 10, 2 );
@@ -554,53 +565,53 @@ register_deactivation_hook( __FILE__, function () {
 if ( is_admin() ) {
 
 	/** 欄位定義：區塊標題 => [ 鍵名 => [ 型別, 標籤, 說明 ] ]。 */
-	function perf_hardening_settings_fields() {
+	function omni_performance_hardening_settings_fields() {
 		return array(
-			__( 'Feature switches', 'perf-hardening' ) => array(
-				'search_hardening'  => array( 'bool', __( 'Search hardening', 'perf-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'perf-hardening' ) ),
-				'archive_hardening' => array( 'bool', __( 'Archive query slimming', 'perf-hardening' ), __( 'Drop SQL_CALC_FOUND_ROWS on tag, author and date archives', 'perf-hardening' ) ),
-				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'perf-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'perf-hardening' ) ),
-				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'perf-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed', 'perf-hardening' ) ),
-				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'perf-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'perf-hardening' ) ),
-				'disable_oembed'    => array( 'bool', __( 'Disable oEmbed', 'perf-hardening' ), __( 'Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling', 'perf-hardening' ) ),
-				'disable_xmlrpc'    => array( 'bool', __( 'Disable XML-RPC', 'perf-hardening' ), __( 'Including pingback', 'perf-hardening' ) ),
-				'http_throttle'     => array( 'bool', __( 'Frontend external request throttle', 'perf-hardening' ), __( 'Cap external HTTP timeouts on frontend requests from logged-out visitors', 'perf-hardening' ) ),
-				'manage_robots_txt' => array( 'bool', __( 'Manage robots.txt', 'perf-hardening' ), __( 'Only takes effect when no physical robots.txt exists in the site root', 'perf-hardening' ) ),
-				'block_user_enum'   => array( 'bool', __( 'Block REST user enumeration', 'perf-hardening' ), __( 'Logged-out visitors cannot access /wp/v2/users', 'perf-hardening' ) ),
+			__( 'Feature switches', 'omni-performance-hardening' ) => array(
+				'search_hardening'  => array( 'bool', __( 'Search hardening', 'omni-performance-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'omni-performance-hardening' ) ),
+				'archive_hardening' => array( 'bool', __( 'Archive query slimming', 'omni-performance-hardening' ), __( 'Drop SQL_CALC_FOUND_ROWS on tag, author and date archives', 'omni-performance-hardening' ) ),
+				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'omni-performance-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'omni-performance-hardening' ) ),
+				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'omni-performance-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed', 'omni-performance-hardening' ) ),
+				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'omni-performance-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'omni-performance-hardening' ) ),
+				'disable_oembed'    => array( 'bool', __( 'Disable oEmbed', 'omni-performance-hardening' ), __( 'Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling', 'omni-performance-hardening' ) ),
+				'disable_xmlrpc'    => array( 'bool', __( 'Disable XML-RPC', 'omni-performance-hardening' ), __( 'Including pingback', 'omni-performance-hardening' ) ),
+				'http_throttle'     => array( 'bool', __( 'Frontend external request throttle', 'omni-performance-hardening' ), __( 'Cap external HTTP timeouts on frontend requests from logged-out visitors', 'omni-performance-hardening' ) ),
+				'manage_robots_txt' => array( 'bool', __( 'Manage robots.txt', 'omni-performance-hardening' ), __( 'Only takes effect when no physical robots.txt exists in the site root', 'omni-performance-hardening' ) ),
+				'block_user_enum'   => array( 'bool', __( 'Block REST user enumeration', 'omni-performance-hardening' ), __( 'Logged-out visitors cannot access /wp/v2/users', 'omni-performance-hardening' ) ),
 			),
-			__( 'Search', 'perf-hardening' ) => array(
-				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'perf-hardening' ), '' ),
-				'search_max_len'    => array( 'int', __( 'Maximum keyword length', 'perf-hardening' ), '' ),
-				'search_max_words'  => array( 'int', __( 'Word count limit', 'perf-hardening' ), __( 'Whitespace-separated words; 0 disables', 'perf-hardening' ) ),
-				'search_max_pages'  => array( 'int', __( 'Result pages limit', 'perf-hardening' ), __( '0 disables', 'perf-hardening' ) ),
-				'search_per_page'   => array( 'int', __( 'Results per page', 'perf-hardening' ), '' ),
-				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'perf-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'perf-hardening' ) ),
-				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'perf-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'perf-hardening' ) ),
+			__( 'Search', 'omni-performance-hardening' ) => array(
+				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'omni-performance-hardening' ), '' ),
+				'search_max_len'    => array( 'int', __( 'Maximum keyword length', 'omni-performance-hardening' ), '' ),
+				'search_max_words'  => array( 'int', __( 'Word count limit', 'omni-performance-hardening' ), __( 'Whitespace-separated words; 0 disables', 'omni-performance-hardening' ) ),
+				'search_max_pages'  => array( 'int', __( 'Result pages limit', 'omni-performance-hardening' ), __( '0 disables', 'omni-performance-hardening' ) ),
+				'search_per_page'   => array( 'int', __( 'Results per page', 'omni-performance-hardening' ), '' ),
+				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'omni-performance-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'omni-performance-hardening' ) ),
+				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'omni-performance-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'omni-performance-hardening' ) ),
 			),
-			__( 'Archives & feeds', 'perf-hardening' ) => array(
-				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'perf-hardening' ), '' ),
-				'thin_term_count'   => array( 'int', __( 'Thin tag threshold', 'perf-hardening' ), __( 'Tag pages with this many posts or fewer are marked noindex; 0 disables', 'perf-hardening' ) ),
-				'deep_page_noindex' => array( 'int', __( 'Deep pagination threshold', 'perf-hardening' ), __( 'Pages beyond this number are marked noindex; 0 disables', 'perf-hardening' ) ),
-				'feed_mode'         => array( 'select', __( 'Feed policy', 'perf-hardening' ), __( 'Check which feed paths your content partners subscribe to before deploying', 'perf-hardening' ) ),
-				'remove_feed_links' => array( 'bool', __( 'Remove extra feed discovery links', 'perf-hardening' ), __( 'Also removes category feed discovery links; existing feed URLs keep working', 'perf-hardening' ) ),
-				'tag_feed_items'    => array( 'int', __( 'Tag feed items', 'perf-hardening' ), __( '0 leaves the default untouched', 'perf-hardening' ) ),
-				'feed_cache_hours'  => array( 'int', __( 'External feed cache hours', 'perf-hardening' ), __( 'Cache lifetime for fetch_feed() results', 'perf-hardening' ) ),
+			__( 'Archives & feeds', 'omni-performance-hardening' ) => array(
+				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'omni-performance-hardening' ), '' ),
+				'thin_term_count'   => array( 'int', __( 'Thin tag threshold', 'omni-performance-hardening' ), __( 'Tag pages with this many posts or fewer are marked noindex; 0 disables', 'omni-performance-hardening' ) ),
+				'deep_page_noindex' => array( 'int', __( 'Deep pagination threshold', 'omni-performance-hardening' ), __( 'Pages beyond this number are marked noindex; 0 disables', 'omni-performance-hardening' ) ),
+				'feed_mode'         => array( 'select', __( 'Feed policy', 'omni-performance-hardening' ), __( 'Check which feed paths your content partners subscribe to before deploying', 'omni-performance-hardening' ) ),
+				'remove_feed_links' => array( 'bool', __( 'Remove extra feed discovery links', 'omni-performance-hardening' ), __( 'Also removes category feed discovery links; existing feed URLs keep working', 'omni-performance-hardening' ) ),
+				'tag_feed_items'    => array( 'int', __( 'Tag feed items', 'omni-performance-hardening' ), __( '0 leaves the default untouched', 'omni-performance-hardening' ) ),
+				'feed_cache_hours'  => array( 'int', __( 'External feed cache hours', 'omni-performance-hardening' ), __( 'Cache lifetime for fetch_feed() results', 'omni-performance-hardening' ) ),
 			),
-			__( 'Other', 'perf-hardening' ) => array(
-				'frontend_timeout'  => array( 'int', __( 'Frontend external timeout (seconds)', 'perf-hardening' ), __( 'Cap on external HTTP calls during frontend requests from logged-out visitors', 'perf-hardening' ) ),
-				'heartbeat_edit'    => array( 'int', __( 'Editor Heartbeat interval (seconds)', 'perf-hardening' ), '' ),
-				'heartbeat_list'    => array( 'int', __( 'List screen Heartbeat interval (seconds)', 'perf-hardening' ), '' ),
+			__( 'Other', 'omni-performance-hardening' ) => array(
+				'frontend_timeout'  => array( 'int', __( 'Frontend external timeout (seconds)', 'omni-performance-hardening' ), __( 'Cap on external HTTP calls during frontend requests from logged-out visitors', 'omni-performance-hardening' ) ),
+				'heartbeat_edit'    => array( 'int', __( 'Editor Heartbeat interval (seconds)', 'omni-performance-hardening' ), '' ),
+				'heartbeat_list'    => array( 'int', __( 'List screen Heartbeat interval (seconds)', 'omni-performance-hardening' ), '' ),
 			),
 		);
 	}
 
 	add_action( 'admin_menu', function () {
 		add_options_page(
-			__( 'Performance Hardening', 'perf-hardening' ),
-			__( 'Performance Hardening', 'perf-hardening' ),
+			__( 'Omni Performance Hardening', 'omni-performance-hardening' ),
+			__( 'Omni Performance Hardening', 'omni-performance-hardening' ),
 			'manage_options',
-			'perf-hardening',
-			'perf_hardening_render_settings_page'
+			'omni-performance-hardening',
+			'omni_performance_hardening_render_settings_page'
 		);
 	} );
 
@@ -615,8 +626,8 @@ if ( is_admin() ) {
 		}
 		check_admin_referer( 'ph_save_settings', 'ph_settings_nonce' );
 
-		$defaults = perf_hardening_defaults();
-		$saved    = get_option( 'perf_hardening_settings' );
+		$defaults = omni_performance_hardening_defaults();
+		$saved    = get_option( 'omni_performance_hardening_settings' );
 		$old      = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
 		$post     = wp_unslash( $_POST );
 		$new      = array();
@@ -647,7 +658,7 @@ if ( is_admin() ) {
 		$new['heartbeat_edit']   = min( 300, max( 15, $new['heartbeat_edit'] ) );
 		$new['heartbeat_list']   = min( 300, max( 15, $new['heartbeat_list'] ) );
 
-		update_option( 'perf_hardening_settings', $new );
+		update_option( 'omni_performance_hardening_settings', $new );
 
 		// oEmbed 開關影響 rewrite rules：刪除後於下一個請求依新設定重建。
 		if ( $old['disable_oembed'] !== $new['disable_oembed'] ) {
@@ -656,7 +667,7 @@ if ( is_admin() ) {
 
 		wp_safe_redirect( add_query_arg(
 			array(
-				'page'    => 'perf-hardening',
+				'page'    => 'omni-performance-hardening',
 				'updated' => '1',
 			),
 			admin_url( 'options-general.php' )
@@ -664,22 +675,22 @@ if ( is_admin() ) {
 		exit;
 	} );
 
-	function perf_hardening_render_settings_page() {
+	function omni_performance_hardening_render_settings_page() {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		$saved = get_option( 'perf_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), perf_hardening_defaults() );
+		$saved = get_option( 'omni_performance_hardening_settings' );
+		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), omni_performance_hardening_defaults() );
 
-		echo '<div class="wrap"><h1>' . esc_html__( 'Performance Hardening', 'perf-hardening' ) . '</h1>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Omni Performance Hardening', 'omni-performance-hardening' ) . '</h1>';
 
 		// 僅用於顯示儲存成功通知，不處理任何資料，毋需 nonce。
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['updated'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p>'
-				. esc_html__( 'Settings saved. Cached pages will reflect changes after the cache expires or is purged.', 'perf-hardening' )
+				. esc_html__( 'Settings saved. Cached pages will reflect changes after the cache expires or is purged.', 'omni-performance-hardening' )
 				. '</p></div>';
 		}
 
@@ -687,7 +698,7 @@ if ( is_admin() ) {
 			'<p>%s</p>',
 			sprintf(
 				/* translators: 1: PH_* 2: wp-config.php */
-				esc_html__( 'Priority: %1$s constants in %2$s > settings on this page > defaults. Fields pinned by a defined constant are locked.', 'perf-hardening' ),
+				esc_html__( 'Priority: %1$s constants in %2$s > settings on this page > defaults. Fields pinned by a defined constant are locked.', 'omni-performance-hardening' ),
 				'<code>PH_*</code>',
 				'<code>wp-config.php</code>'
 			)
@@ -695,7 +706,7 @@ if ( is_admin() ) {
 		echo '<form method="post">';
 		wp_nonce_field( 'ph_save_settings', 'ph_settings_nonce' );
 
-		foreach ( perf_hardening_settings_fields() as $section => $fields ) {
+		foreach ( omni_performance_hardening_settings_fields() as $section => $fields ) {
 
 			echo '<h2>' . esc_html( $section ) . '</h2>';
 			echo '<table class="form-table" role="presentation">';
@@ -720,9 +731,9 @@ if ( is_admin() ) {
 					);
 				} elseif ( 'select' === $type ) {
 					$modes = array(
-						'cache'  => __( 'cache — keep all feeds, only add cache headers', 'perf-hardening' ),
-						'strict' => __( 'strict — author / search / comment feeds return 410 (default)', 'perf-hardening' ),
-						'off'    => __( 'off — keep only the main feed and category feeds', 'perf-hardening' ),
+						'cache'  => __( 'cache — keep all feeds, only add cache headers', 'omni-performance-hardening' ),
+						'strict' => __( 'strict — author / search / comment feeds return 410 (default)', 'omni-performance-hardening' ),
+						'off'    => __( 'off — keep only the main feed and category feeds', 'omni-performance-hardening' ),
 					);
 					echo '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '"' . disabled( $locked, true, false ) . '>';
 					foreach ( $modes as $mode => $text ) {
@@ -746,7 +757,7 @@ if ( is_admin() ) {
 						'<p class="description">%s</p>',
 						sprintf(
 							/* translators: %s: constant name, e.g. PH_SEARCH_HARDENING */
-							esc_html__( 'Locked by %s; remove the constant from wp-config.php to edit it here.', 'perf-hardening' ),
+							esc_html__( 'Locked by %s; remove the constant from wp-config.php to edit it here.', 'omni-performance-hardening' ),
 							'<code>' . esc_html( $const ) . '</code>'
 						)
 					);
@@ -758,7 +769,18 @@ if ( is_admin() ) {
 			echo '</table>';
 		}
 
-		submit_button( __( 'Save Settings', 'perf-hardening' ) );
-		echo '</form></div>';
+		submit_button( __( 'Save Settings', 'omni-performance-hardening' ) );
+		echo '</form>';
+
+		printf(
+			'<hr><p class="description">%s</p>',
+			sprintf(
+				/* translators: %s: linked sister plugin name */
+				esc_html__( 'Sister plugin: %s — SEO and webmaster tooling from the same team. This plugin keeps your site fast and crawl-efficient; the SEO suite handles visibility and indexing.', 'omni-performance-hardening' ),
+				'<a href="https://wordpress.org/plugins/omni-webmaster-seo-suite/" target="_blank" rel="noopener">Omni Webmaster SEO Suite</a>'
+			)
+		);
+
+		echo '</div>';
 	}
 }

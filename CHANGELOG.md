@@ -3,6 +3,28 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.4.0] - 2026-07-31
+
+### 變更（不相容）
+
+- 外掛更名為 **Omni Performance Hardening**；slug 與 text domain 改為
+  `omni-performance-hardening`（主檔與翻譯檔一併更名），與 WordPress.org
+  送審時由名稱產生的 slug 對齊。**`PH_*` 常數不變**，既有站台不受影響；
+  mu-plugin 部署者更新時請改放 `omni-performance-hardening.php` 並移除舊檔
+- 全域函式與 filter hook 前綴改為 `omni_performance_hardening_`
+- 後台設定的 option 名稱改為 `omni_performance_hardening_settings`
+  （尚無正式站使用後台設定，無實際影響）
+
+### 修正
+
+- 內附翻譯改以 `load_textdomain()` 載入（Plugin Check 不再出現
+  `load_plugin_textdomain` discouraged 警告）；wp.org 託管翻譯仍由核心自動載入
+
+### 新增
+
+- 說明（readme）與設定頁加入姊妹外掛
+  [Omni Webmaster SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/) 的介紹連結
+
 ## [1.3.0] - 2026-07-31
 
 依官方 Plugin Check（PCP）檢測結果調整，為上架 WordPress.org 準備。
