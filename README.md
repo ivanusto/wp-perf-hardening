@@ -180,3 +180,7 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 ## 授權
 
 GPL-2.0-or-later
+
+## License / 授權條款
+
+This project is licensed under the [GNU General Public License v2.0 or later (GPL-2.0-or-later)](LICENSE).
