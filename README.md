@@ -66,6 +66,7 @@ mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩
 | `PH_HTTP_THROTTLE` | `true` | 前台外部 HTTP 請求逾時上限 |
 | `PH_MANAGE_ROBOTS_TXT` | `true` | 接管虛擬 robots.txt |
 | `PH_BLOCK_USER_ENUM` | `true` | 停用未登入者的 REST 使用者列舉 |
+| `PH_DASHBOARD_WIDGETS` | `true` | 移除「WordPress 活動及新聞」與 W3 Total Cache 最新消息 widget |
 
 ### 搜尋
 
@@ -172,7 +173,7 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 
 ## 姊妹作品
 
-[Omni Webmaster SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/)（已上架 WordPress.org）為同團隊出品的 SEO 與站長工具，與本外掛互補：本外掛負責效能與爬取收斂，SEO Suite 負責曝光與索引。
+[Omni Webmaster & SEO Suite](https://wordpress.org/plugins/omni-webmaster-seo-suite/)（已上架 WordPress.org）為同團隊出品的 SEO 與站長工具，與本外掛互補：本外掛負責效能與爬取收斂，SEO Suite 負責曝光與索引。
 
 ## 授權
 

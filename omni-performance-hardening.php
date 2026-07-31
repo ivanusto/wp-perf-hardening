@@ -3,7 +3,7 @@
  * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.4.0
+ * Version:      1.5.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -78,6 +78,7 @@ function omni_performance_hardening_defaults() {
 		'http_throttle'     => true,
 		'manage_robots_txt' => true,
 		'block_user_enum'   => true,
+		'dashboard_widgets' => true,
 
 		// 搜尋防護。
 		'search_min_len'    => 2,
@@ -446,12 +447,15 @@ if ( omni_performance_hardening_get( 'http_throttle' ) ) {
 	}, 100, 2 );
 }
 
-// 移除會觸發外部抓取的儀表板 widget。
-add_action( 'wp_dashboard_setup', function () {
-	remove_meta_box( 'dashboard_primary', 'dashboard', 'side' );
-	remove_meta_box( 'dashboard_secondary', 'dashboard', 'side' );
-	remove_meta_box( 'w3tc_latest', 'dashboard', 'normal' );
-}, 100 );
+// 移除會觸發外部抓取的儀表板 widget（WordPress 活動及新聞、W3 Total Cache 最新消息）。
+if ( omni_performance_hardening_get( 'dashboard_widgets' ) ) {
+
+	add_action( 'wp_dashboard_setup', function () {
+		remove_meta_box( 'dashboard_primary', 'dashboard', 'side' );
+		remove_meta_box( 'dashboard_secondary', 'dashboard', 'side' );
+		remove_meta_box( 'w3tc_latest', 'dashboard', 'normal' );
+	}, 100 );
+}
 
 /* -------------------------------------------------------------------------
  * 7. XML-RPC / pingback / REST 使用者列舉
@@ -578,6 +582,7 @@ if ( is_admin() ) {
 				'http_throttle'     => array( 'bool', __( 'Frontend external request throttle', 'omni-performance-hardening' ), __( 'Cap external HTTP timeouts on frontend requests from logged-out visitors', 'omni-performance-hardening' ) ),
 				'manage_robots_txt' => array( 'bool', __( 'Manage robots.txt', 'omni-performance-hardening' ), __( 'Only takes effect when no physical robots.txt exists in the site root', 'omni-performance-hardening' ) ),
 				'block_user_enum'   => array( 'bool', __( 'Block REST user enumeration', 'omni-performance-hardening' ), __( 'Logged-out visitors cannot access /wp/v2/users', 'omni-performance-hardening' ) ),
+				'dashboard_widgets' => array( 'bool', __( 'Remove news dashboard widgets', 'omni-performance-hardening' ), __( 'Removes the WordPress Events and News widget, and the W3 Total Cache news widget if present. These fetch remote data every time the dashboard loads', 'omni-performance-hardening' ) ),
 			),
 			__( 'Search', 'omni-performance-hardening' ) => array(
 				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'omni-performance-hardening' ), '' ),
@@ -777,7 +782,7 @@ if ( is_admin() ) {
 			sprintf(
 				/* translators: %s: linked sister plugin name */
 				esc_html__( 'Sister plugin: %s — SEO and webmaster tooling from the same team. This plugin keeps your site fast and crawl-efficient; the SEO suite handles visibility and indexing.', 'omni-performance-hardening' ),
-				'<a href="https://wordpress.org/plugins/omni-webmaster-seo-suite/" target="_blank" rel="noopener">Omni Webmaster SEO Suite</a>'
+				'<a href="https://wordpress.org/plugins/omni-webmaster-seo-suite/" target="_blank" rel="noopener">Omni Webmaster &amp; SEO Suite</a>'
 			)
 		);
 

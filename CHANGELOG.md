@@ -3,6 +3,17 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.5.0] - 2026-07-31
+
+送審 WordPress.org 前的最後調整。
+
+### 變更
+
+- 儀表板新聞 widget 的移除改為可關閉的設定（`PH_DASHBOARD_WIDGETS`，預設 `true`），
+  原本為無條件執行。此行為會移除其他外掛（W3 Total Cache）的 widget，
+  依 wp.org 審核準則應交由使用者控制
+- 姊妹外掛名稱更正為 **Omni Webmaster & SEO Suite**（原缺少 `&`）
+
 ## [1.4.0] - 2026-07-31
 
 ### 變更（不相容）

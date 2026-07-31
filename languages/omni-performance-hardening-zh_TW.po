@@ -3,7 +3,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Omni Performance Hardening 1.4.0\n"
+"Project-Id-Version: Omni Performance Hardening 1.5.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/omni-performance-hardening\n"
 "Last-Translator: ivanusto\n"
 "Language-Team: Chinese (Taiwan)\n"
@@ -87,6 +87,12 @@ msgstr "封鎖 REST 使用者列舉"
 
 msgid "Logged-out visitors cannot access /wp/v2/users"
 msgstr "未登入者無法存取 /wp/v2/users"
+
+msgid "Remove news dashboard widgets"
+msgstr "移除新聞類儀表板 widget"
+
+msgid "Removes the WordPress Events and News widget, and the W3 Total Cache news widget if present. These fetch remote data every time the dashboard loads"
+msgstr "移除「WordPress 活動及新聞」widget，以及 W3 Total Cache 的最新消息 widget（若存在）。這些 widget 每次載入儀表板都會抓取遠端資料"
 
 msgid "Search"
 msgstr "搜尋"
