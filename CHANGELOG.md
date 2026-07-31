@@ -17,6 +17,13 @@
 ### 變更
 
 - 設定讀取由常數改為 `ph_get()` 統一解析；既有以常數部署的站台行為不變
+- 授權由 GPL-3.0-or-later 改為 GPL-2.0-or-later，為上架 WordPress.org 外掛目錄準備
+- 新增 WordPress.org 格式的 readme.txt（Tested up to 7.0，於 Docker WordPress 7.0.2 實測）
+
+### 修正
+
+- XML-RPC 現在確實全面停用：原本只掛 `xmlrpc_enabled`，該 filter 僅影響需驗證的方法，
+  `pingback.ping` 等匿名方法仍可呼叫；補上 `xmlrpc_methods` 清空方法表
 
 ## [1.0.0] - 2026-07-31
 

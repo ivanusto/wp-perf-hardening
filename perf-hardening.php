@@ -9,7 +9,8 @@
  * Requires at least: 5.9
  * Author:       ivanusto
  * Author URI:   https://github.com/ivanusto
- * License:      GPL-3.0-or-later
+ * License:      GPL-2.0-or-later
+ * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  *
  * 兩種安裝方式：
  * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → 效能強化」調整參數。
@@ -435,7 +436,10 @@ add_action( 'wp_dashboard_setup', function () {
 
 if ( ph_get( 'disable_xmlrpc' ) ) {
 
+	// xmlrpc_enabled 只擋「需要驗證」的方法，pingback.ping 與
+	// system.* 等匿名方法不受影響，必須連方法表一併清空。
 	add_filter( 'xmlrpc_enabled', '__return_false' );
+	add_filter( 'xmlrpc_methods', '__return_empty_array' );
 
 	add_filter( 'wp_headers', function ( $headers ) {
 		unset( $headers['X-Pingback'] );

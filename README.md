@@ -170,4 +170,4 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 
 ## 授權
 
-GPL-3.0-or-later
+GPL-2.0-or-later（與 WordPress 官方外掛目錄的授權要求一致）
