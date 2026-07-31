@@ -3,6 +3,16 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.2.0] - 2026-07-31
+
+### 新增
+
+- 字串國際化：介面改以英文為源語言（text domain `perf-hardening`），
+  `languages/` 內附繁體中文（zh_TW）翻譯（.po / .mo / .l10n.php）與 POT 樣板
+- 依安裝模式自動選用 `load_plugin_textdomain` 或 `load_muplugin_textdomain`；
+  mu-plugin 模式如需翻譯，將 `languages/` 一併放入 `mu-plugins/`
+- 外掛名稱與描述亦隨語系翻譯（於 Docker WordPress 7.0.2 en_US 與 zh_TW 實測）
+
 ## [1.1.0] - 2026-07-31
 
 ### 新增

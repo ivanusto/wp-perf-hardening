@@ -2,15 +2,16 @@
 /**
  * Plugin Name:  Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/wp-perf-hardening
- * Description:  收斂 WordPress 高成本端點：站內搜尋全表掃描、封存頁 SQL_CALC_FOUND_ROWS、
- *               低價值 Feed、oEmbed、XML-RPC，並為 CDN 提供正確的快取標頭。
- * Version:      1.1.0
+ * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
+ * Version:      1.2.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
  * Author URI:   https://github.com/ivanusto
  * License:      GPL-2.0-or-later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain:  perf-hardening
+ * Domain Path:  /languages
  *
  * 兩種安裝方式：
  * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → 效能強化」調整參數。
@@ -32,6 +33,17 @@ if ( defined( 'PH_LOADED' ) ) {
 	return;
 }
 define( 'PH_LOADED', true );
+
+// 載入翻譯：源語言為英文，languages/ 內附 zh_TW。
+// mu-plugin 模式需將 languages/ 一併放入 mu-plugins/。
+add_action( 'init', function () {
+	if ( defined( 'WPMU_PLUGIN_DIR' )
+		&& 0 === strpos( wp_normalize_path( __FILE__ ), wp_normalize_path( WPMU_PLUGIN_DIR ) ) ) {
+		load_muplugin_textdomain( 'perf-hardening', 'languages' );
+	} else {
+		load_plugin_textdomain( 'perf-hardening', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+	}
+} );
 
 /* -------------------------------------------------------------------------
  * 設定解析：常數 > 後台選項 > 預設值
@@ -544,46 +556,52 @@ if ( is_admin() ) {
 	/** 欄位定義：區塊標題 => [ 鍵名 => [ 型別, 標籤, 說明 ] ]。 */
 	function ph_settings_fields() {
 		return array(
-			'功能開關' => array(
-				'search_hardening'  => array( 'bool', '站內搜尋防護', '過濾垃圾關鍵字並限縮查詢範圍' ),
-				'archive_hardening' => array( 'bool', '封存頁查詢瘦身', '標籤／作者／日期封存頁關閉 SQL_CALC_FOUND_ROWS' ),
-				'cache_headers'     => array( 'bool', '快取與 robots 標頭', 'Feed、搜尋頁、標籤頁、404 依端點類型送出 Cache-Control 與 X-Robots-Tag' ),
-				'author_hardening'  => array( 'bool', '作者頁收斂', '作者頁 noindex、author feed 回 410、robots.txt 封鎖 /author/。想保留作者頁曝光的站台請關閉' ),
-				'heartbeat_tuning'  => array( 'bool', 'Heartbeat 調頻', '降低後台輪詢頻率並停用前台 Heartbeat' ),
-				'disable_oembed'    => array( 'bool', '停用 oEmbed', '移除 /embed/ 路由與 oEmbed 端點；切換後自動於下一個請求重建 rewrite rules' ),
-				'disable_xmlrpc'    => array( 'bool', '停用 XML-RPC', '含 pingback' ),
-				'http_throttle'     => array( 'bool', '前台外部請求節流', '未登入訪客的前台請求套用外部 HTTP 逾時上限' ),
-				'manage_robots_txt' => array( 'bool', '接管 robots.txt', '僅在根目錄無實體 robots.txt 時生效' ),
-				'block_user_enum'   => array( 'bool', '封鎖 REST 使用者列舉', '未登入者無法存取 /wp/v2/users' ),
+			__( 'Feature switches', 'perf-hardening' ) => array(
+				'search_hardening'  => array( 'bool', __( 'Search hardening', 'perf-hardening' ), __( 'Filter junk search probes and narrow the query scope', 'perf-hardening' ) ),
+				'archive_hardening' => array( 'bool', __( 'Archive query slimming', 'perf-hardening' ), __( 'Drop SQL_CALC_FOUND_ROWS on tag, author and date archives', 'perf-hardening' ) ),
+				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'perf-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'perf-hardening' ) ),
+				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'perf-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed', 'perf-hardening' ) ),
+				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'perf-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'perf-hardening' ) ),
+				'disable_oembed'    => array( 'bool', __( 'Disable oEmbed', 'perf-hardening' ), __( 'Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling', 'perf-hardening' ) ),
+				'disable_xmlrpc'    => array( 'bool', __( 'Disable XML-RPC', 'perf-hardening' ), __( 'Including pingback', 'perf-hardening' ) ),
+				'http_throttle'     => array( 'bool', __( 'Frontend external request throttle', 'perf-hardening' ), __( 'Cap external HTTP timeouts on frontend requests from logged-out visitors', 'perf-hardening' ) ),
+				'manage_robots_txt' => array( 'bool', __( 'Manage robots.txt', 'perf-hardening' ), __( 'Only takes effect when no physical robots.txt exists in the site root', 'perf-hardening' ) ),
+				'block_user_enum'   => array( 'bool', __( 'Block REST user enumeration', 'perf-hardening' ), __( 'Logged-out visitors cannot access /wp/v2/users', 'perf-hardening' ) ),
 			),
-			'搜尋' => array(
-				'search_min_len'    => array( 'int', '關鍵字最短長度', '' ),
-				'search_max_len'    => array( 'int', '關鍵字最長長度', '' ),
-				'search_max_words'  => array( 'int', '詞數上限', '空白分隔詞數，0 停用' ),
-				'search_max_pages'  => array( 'int', '結果頁數上限', '0 停用' ),
-				'search_per_page'   => array( 'int', '每頁筆數', '' ),
-				'search_title_only' => array( 'bool', '只比對標題與摘要', '需 WP 6.2+。大幅降低掃描成本，但會漏掉內文關鍵字' ),
-				'search_latin_max'  => array( 'int', '非中日韓長字串門檻', '超過此長度且不含中日韓字元視為垃圾探測，0 停用' ),
+			__( 'Search', 'perf-hardening' ) => array(
+				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'perf-hardening' ), '' ),
+				'search_max_len'    => array( 'int', __( 'Maximum keyword length', 'perf-hardening' ), '' ),
+				'search_max_words'  => array( 'int', __( 'Word count limit', 'perf-hardening' ), __( 'Whitespace-separated words; 0 disables', 'perf-hardening' ) ),
+				'search_max_pages'  => array( 'int', __( 'Result pages limit', 'perf-hardening' ), __( '0 disables', 'perf-hardening' ) ),
+				'search_per_page'   => array( 'int', __( 'Results per page', 'perf-hardening' ), '' ),
+				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'perf-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'perf-hardening' ) ),
+				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'perf-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'perf-hardening' ) ),
 			),
-			'封存頁與 Feed' => array(
-				'archive_per_page'  => array( 'int', '封存頁每頁筆數', '' ),
-				'thin_term_count'   => array( 'int', '薄內容標籤門檻', '文章數低於或等於此值的標籤頁標記 noindex，0 停用' ),
-				'deep_page_noindex' => array( 'int', '深層分頁門檻', '分頁超過此頁數標記 noindex，0 停用' ),
-				'feed_mode'         => array( 'select', 'Feed 策略', '部署前請先確認合作夥伴訂閱的 Feed 路徑' ),
-				'remove_feed_links' => array( 'bool', '移除額外 Feed discovery link', '同時移除分類 Feed 的 discovery link，既有 URL 不受影響' ),
-				'tag_feed_items'    => array( 'int', 'Tag feed 項目數', '0 表示不調整' ),
-				'feed_cache_hours'  => array( 'int', '外部 Feed 快取時數', 'fetch_feed() 抓取結果的快取時間' ),
+			__( 'Archives & feeds', 'perf-hardening' ) => array(
+				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'perf-hardening' ), '' ),
+				'thin_term_count'   => array( 'int', __( 'Thin tag threshold', 'perf-hardening' ), __( 'Tag pages with this many posts or fewer are marked noindex; 0 disables', 'perf-hardening' ) ),
+				'deep_page_noindex' => array( 'int', __( 'Deep pagination threshold', 'perf-hardening' ), __( 'Pages beyond this number are marked noindex; 0 disables', 'perf-hardening' ) ),
+				'feed_mode'         => array( 'select', __( 'Feed policy', 'perf-hardening' ), __( 'Check which feed paths your content partners subscribe to before deploying', 'perf-hardening' ) ),
+				'remove_feed_links' => array( 'bool', __( 'Remove extra feed discovery links', 'perf-hardening' ), __( 'Also removes category feed discovery links; existing feed URLs keep working', 'perf-hardening' ) ),
+				'tag_feed_items'    => array( 'int', __( 'Tag feed items', 'perf-hardening' ), __( '0 leaves the default untouched', 'perf-hardening' ) ),
+				'feed_cache_hours'  => array( 'int', __( 'External feed cache hours', 'perf-hardening' ), __( 'Cache lifetime for fetch_feed() results', 'perf-hardening' ) ),
 			),
-			'其他' => array(
-				'frontend_timeout'  => array( 'int', '前台外部請求逾時（秒）', '未登入訪客的前台請求，外部 HTTP 呼叫逾時上限' ),
-				'heartbeat_edit'    => array( 'int', '編輯畫面 Heartbeat 間隔（秒）', '' ),
-				'heartbeat_list'    => array( 'int', '列表畫面 Heartbeat 間隔（秒）', '' ),
+			__( 'Other', 'perf-hardening' ) => array(
+				'frontend_timeout'  => array( 'int', __( 'Frontend external timeout (seconds)', 'perf-hardening' ), __( 'Cap on external HTTP calls during frontend requests from logged-out visitors', 'perf-hardening' ) ),
+				'heartbeat_edit'    => array( 'int', __( 'Editor Heartbeat interval (seconds)', 'perf-hardening' ), '' ),
+				'heartbeat_list'    => array( 'int', __( 'List screen Heartbeat interval (seconds)', 'perf-hardening' ), '' ),
 			),
 		);
 	}
 
 	add_action( 'admin_menu', function () {
-		add_options_page( '效能強化', '效能強化', 'manage_options', 'perf-hardening', 'ph_render_settings_page' );
+		add_options_page(
+			__( 'Performance Hardening', 'perf-hardening' ),
+			__( 'Performance Hardening', 'perf-hardening' ),
+			'manage_options',
+			'perf-hardening',
+			'ph_render_settings_page'
+		);
 	} );
 
 	// 儲存：非 Settings API 的精簡表單，POST 回同一頁。
@@ -655,13 +673,23 @@ if ( is_admin() ) {
 		$saved = get_option( 'perf_hardening_settings' );
 		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), ph_defaults() );
 
-		echo '<div class="wrap"><h1>效能強化</h1>';
+		echo '<div class="wrap"><h1>' . esc_html__( 'Performance Hardening', 'perf-hardening' ) . '</h1>';
 
 		if ( isset( $_GET['updated'] ) ) {
-			echo '<div class="notice notice-success is-dismissible"><p>設定已儲存。快取中的頁面需待快取過期或手動清除後才會反映。</p></div>';
+			echo '<div class="notice notice-success is-dismissible"><p>'
+				. esc_html__( 'Settings saved. Cached pages will reflect changes after the cache expires or is purged.', 'perf-hardening' )
+				. '</p></div>';
 		}
 
-		echo '<p>優先序：<code>wp-config.php</code> 的 <code>PH_*</code> 常數 &gt; 此處設定 &gt; 預設值。已定義常數的欄位會顯示為鎖定。</p>';
+		printf(
+			'<p>%s</p>',
+			sprintf(
+				/* translators: 1: PH_* 2: wp-config.php */
+				esc_html__( 'Priority: %1$s constants in %2$s > settings on this page > defaults. Fields pinned by a defined constant are locked.', 'perf-hardening' ),
+				'<code>PH_*</code>',
+				'<code>wp-config.php</code>'
+			)
+		);
 		echo '<form method="post">';
 		wp_nonce_field( 'ph_save_settings', 'ph_settings_nonce' );
 
@@ -690,9 +718,9 @@ if ( is_admin() ) {
 					);
 				} elseif ( 'select' === $type ) {
 					$modes = array(
-						'cache'  => 'cache — 全部 Feed 保留，僅加快取標頭',
-						'strict' => 'strict — author / search / comment feed 回 410（預設）',
-						'off'    => 'off — 僅保留主 Feed 與分類 Feed',
+						'cache'  => __( 'cache — keep all feeds, only add cache headers', 'perf-hardening' ),
+						'strict' => __( 'strict — author / search / comment feeds return 410 (default)', 'perf-hardening' ),
+						'off'    => __( 'off — keep only the main feed and category feeds', 'perf-hardening' ),
 					);
 					echo '<select id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '"' . disabled( $locked, true, false ) . '>';
 					foreach ( $modes as $mode => $text ) {
@@ -712,7 +740,14 @@ if ( is_admin() ) {
 					echo '<p class="description">' . esc_html( $desc ) . '</p>';
 				}
 				if ( $locked ) {
-					echo '<p class="description">已由 <code>' . esc_html( $const ) . '</code> 固定，移除該常數後才可在此調整。</p>';
+					printf(
+						'<p class="description">%s</p>',
+						sprintf(
+							/* translators: %s: constant name, e.g. PH_SEARCH_HARDENING */
+							esc_html__( 'Locked by %s; remove the constant from wp-config.php to edit it here.', 'perf-hardening' ),
+							'<code>' . esc_html( $const ) . '</code>'
+						)
+					);
 				}
 
 				echo '</td></tr>';
@@ -721,7 +756,7 @@ if ( is_admin() ) {
 			echo '</table>';
 		}
 
-		submit_button( '儲存設定' );
+		submit_button( __( 'Save Settings', 'perf-hardening' ) );
 		echo '</form></div>';
 	}
 }

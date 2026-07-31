@@ -38,6 +38,8 @@ sudo -u www-data wp rewrite flush --path=/var/www/html
 
 mu-plugin 模式同樣有「設定 → 效能強化」後台頁可用。兩種方式同時安裝時只有先載入的 mu-plugin 版生效。
 
+介面源語言為英文，`languages/` 內附繁體中文（zh_TW）翻譯，依站台語系自動切換。mu-plugin 模式如需翻譯，請將 `languages/` 資料夾一併放入 `mu-plugins/`。
+
 若站台使用頁面快取，安裝後請一併清除。
 
 ## 設定

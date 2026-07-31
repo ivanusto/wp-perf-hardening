@@ -1,0 +1,207 @@
+# Traditional Chinese (Taiwan) translation for Performance Hardening.
+# Copyright (C) 2026 ivanusto
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Performance Hardening 1.2.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/perf-hardening\n"
+"Last-Translator: ivanusto\n"
+"Language-Team: Chinese (Taiwan)\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"POT-Creation-Date: 2026-07-31T03:02:52+00:00\n"
+"PO-Revision-Date: 2026-07-31T03:10:00+00:00\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: perf-hardening\n"
+
+#. Plugin Name of the plugin
+msgid "Performance Hardening"
+msgstr "效能強化"
+
+#. Description of the plugin
+msgid "Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers."
+msgstr "收斂 WordPress 高成本端點：站內搜尋全表掃描、封存頁 SQL_CALC_FOUND_ROWS、低價值 Feed、oEmbed、XML-RPC，並為 CDN 提供正確的快取標頭。"
+
+msgid "Feature switches"
+msgstr "功能開關"
+
+msgid "Search hardening"
+msgstr "站內搜尋防護"
+
+msgid "Filter junk search probes and narrow the query scope"
+msgstr "過濾垃圾關鍵字並限縮查詢範圍"
+
+msgid "Archive query slimming"
+msgstr "封存頁查詢瘦身"
+
+msgid "Drop SQL_CALC_FOUND_ROWS on tag, author and date archives"
+msgstr "標籤／作者／日期封存頁關閉 SQL_CALC_FOUND_ROWS"
+
+msgid "Cache & robots headers"
+msgstr "快取與 robots 標頭"
+
+msgid "Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s"
+msgstr "Feed、搜尋頁、標籤頁、404 依端點類型送出 Cache-Control 與 X-Robots-Tag"
+
+msgid "Author page hardening"
+msgstr "作者頁收斂"
+
+msgid "Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Turn off on sites that want author archives exposed"
+msgstr "作者頁 noindex、author feed 回 410、robots.txt 封鎖 /author/。想保留作者頁曝光的站台請關閉"
+
+msgid "Heartbeat tuning"
+msgstr "Heartbeat 調頻"
+
+msgid "Slow down admin polling and disable the frontend Heartbeat"
+msgstr "降低後台輪詢頻率並停用前台 Heartbeat"
+
+msgid "Disable oEmbed"
+msgstr "停用 oEmbed"
+
+msgid "Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling"
+msgstr "移除 /embed/ 路由與 oEmbed 端點；切換後自動重建 rewrite rules"
+
+msgid "Disable XML-RPC"
+msgstr "停用 XML-RPC"
+
+msgid "Including pingback"
+msgstr "含 pingback"
+
+msgid "Frontend external request throttle"
+msgstr "前台外部請求節流"
+
+msgid "Cap external HTTP timeouts on frontend requests from logged-out visitors"
+msgstr "未登入訪客的前台請求套用外部 HTTP 逾時上限"
+
+msgid "Manage robots.txt"
+msgstr "接管 robots.txt"
+
+msgid "Only takes effect when no physical robots.txt exists in the site root"
+msgstr "僅在根目錄無實體 robots.txt 時生效"
+
+msgid "Block REST user enumeration"
+msgstr "封鎖 REST 使用者列舉"
+
+msgid "Logged-out visitors cannot access /wp/v2/users"
+msgstr "未登入者無法存取 /wp/v2/users"
+
+msgid "Search"
+msgstr "搜尋"
+
+msgid "Minimum keyword length"
+msgstr "關鍵字最短長度"
+
+msgid "Maximum keyword length"
+msgstr "關鍵字最長長度"
+
+msgid "Word count limit"
+msgstr "詞數上限"
+
+msgid "Whitespace-separated words; 0 disables"
+msgstr "空白分隔詞數，0 停用"
+
+msgid "Result pages limit"
+msgstr "結果頁數上限"
+
+msgid "0 disables"
+msgstr "0 停用"
+
+msgid "Results per page"
+msgstr "每頁筆數"
+
+msgid "Match titles and excerpts only"
+msgstr "只比對標題與摘要"
+
+msgid "Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content"
+msgstr "需 WP 6.2+。大幅降低掃描成本，但會漏掉只出現在內文的關鍵字"
+
+msgid "Non-CJK long string threshold"
+msgstr "非中日韓長字串門檻"
+
+msgid "Strings longer than this without CJK characters are treated as junk probes; 0 disables"
+msgstr "超過此長度且不含中日韓字元視為垃圾探測，0 停用"
+
+msgid "Archives & feeds"
+msgstr "封存頁與 Feed"
+
+msgid "Archive posts per page"
+msgstr "封存頁每頁筆數"
+
+msgid "Thin tag threshold"
+msgstr "薄內容標籤門檻"
+
+msgid "Tag pages with this many posts or fewer are marked noindex; 0 disables"
+msgstr "文章數低於或等於此值的標籤頁標記 noindex，0 停用"
+
+msgid "Deep pagination threshold"
+msgstr "深層分頁門檻"
+
+msgid "Pages beyond this number are marked noindex; 0 disables"
+msgstr "分頁超過此頁數標記 noindex，0 停用"
+
+msgid "Feed policy"
+msgstr "Feed 策略"
+
+msgid "Check which feed paths your content partners subscribe to before deploying"
+msgstr "部署前請先確認合作夥伴訂閱的 Feed 路徑"
+
+msgid "Remove extra feed discovery links"
+msgstr "移除額外 Feed discovery link"
+
+msgid "Also removes category feed discovery links; existing feed URLs keep working"
+msgstr "同時移除分類 Feed 的 discovery link，既有 Feed URL 不受影響"
+
+msgid "Tag feed items"
+msgstr "Tag feed 項目數"
+
+msgid "0 leaves the default untouched"
+msgstr "0 表示不調整"
+
+msgid "External feed cache hours"
+msgstr "外部 Feed 快取時數"
+
+msgid "Cache lifetime for fetch_feed() results"
+msgstr "fetch_feed() 抓取結果的快取時間"
+
+msgid "Other"
+msgstr "其他"
+
+msgid "Frontend external timeout (seconds)"
+msgstr "前台外部請求逾時（秒）"
+
+msgid "Cap on external HTTP calls during frontend requests from logged-out visitors"
+msgstr "未登入訪客的前台請求，外部 HTTP 呼叫逾時上限"
+
+msgid "Editor Heartbeat interval (seconds)"
+msgstr "編輯畫面 Heartbeat 間隔（秒）"
+
+msgid "List screen Heartbeat interval (seconds)"
+msgstr "列表畫面 Heartbeat 間隔（秒）"
+
+msgid "Settings saved. Cached pages will reflect changes after the cache expires or is purged."
+msgstr "設定已儲存。快取中的頁面需待快取過期或手動清除後才會反映。"
+
+#. translators: 1: PH_* 2: wp-config.php
+#, php-format
+msgid "Priority: %1$s constants in %2$s > settings on this page > defaults. Fields pinned by a defined constant are locked."
+msgstr "優先序：%2$s 的 %1$s 常數 > 此處設定 > 預設值。已定義常數的欄位會顯示為鎖定。"
+
+msgid "cache — keep all feeds, only add cache headers"
+msgstr "cache — 全部 Feed 保留，僅加快取標頭"
+
+msgid "strict — author / search / comment feeds return 410 (default)"
+msgstr "strict — author / search / comment feed 回 410（預設）"
+
+msgid "off — keep only the main feed and category feeds"
+msgstr "off — 僅保留主 Feed 與分類 Feed"
+
+#. translators: %s: constant name, e.g. PH_SEARCH_HARDENING
+#, php-format
+msgid "Locked by %s; remove the constant from wp-config.php to edit it here."
+msgstr "已由 %s 固定，移除 wp-config.php 中該常數後才可在此調整。"
+
+msgid "Save Settings"
+msgstr "儲存設定"
