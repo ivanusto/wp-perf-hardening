@@ -4,7 +4,7 @@ Tags: performance, cache, search, feed, xml-rpc
 Requires at least: 5.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,7 +19,8 @@ Built for large, crawl-heavy content sites (news, media, aggregators) where bot 
 * **Endpoint cache headers** — correct `Cache-Control` / `X-Robots-Tag` for feeds, search, tag pages, author pages, deep pagination and 404s, so your CDN can absorb bot traffic.
 * **Feed policy** — three modes (cache / strict / off) for low-value feeds; author, search and comment feeds can return 410.
 * **Author page hardening** — a single switch for author-page noindex, author feed 410 and the robots.txt `/author/` block. Off by default, since most sites want author archives indexed.
-* **Heartbeat tuning, oEmbed/XML-RPC disabling, REST user enumeration blocking, frontend external HTTP timeout cap, managed virtual robots.txt, removal of remote-fetching dashboard news widgets.**
+* **oEmbed** — two separate switches: external discovery (off by default, no probing of arbitrary URLs) and this site's own oEmbed endpoints and `/embed/` routes (kept by default, since WordPress needs them to embed your own posts). `/embed/` pages are sent as `noindex` with a long CDN cache instead of being blocked.
+* **Heartbeat tuning, XML-RPC disabling, REST user enumeration blocking, frontend external HTTP timeout cap, managed virtual robots.txt, removal of remote-fetching dashboard news widgets.**
 
 Every feature has its own on/off switch — nothing is forced on you.
 
@@ -47,11 +48,21 @@ The main feed and category feeds are always kept. Check which feed paths your pa
 
 Turn off "Skip counts on widget queries". That setting drops the total-row count on secondary queries, which sets `found_posts` to 0; page builders that read that value — Elementor's post widgets in particular — stop rendering the list entirely. It is off by default for this reason.
 
+= Embeds of my own posts stopped showing. =
+
+Turn off "Disable oEmbed endpoints and /embed/ routes". WordPress builds those embed cards from this site's own oEmbed REST endpoint, the `json+oembed` discovery link in `<head>` and the `/embed/` route; removing them leaves a plain link. The setting is off by default from 1.7.0 on. WordPress also caches embed results, so re-save the post afterwards to clear a previously failed lookup.
+
 = A plugin making external API calls started timing out. =
 
 The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "Frontend external request throttle" or raise the timeout.
 
 == Changelog ==
+
+= 1.7.0 =
+* Fixed: disabling oEmbed also broke embeds of the site's own posts. The single `PH_DISABLE_OEMBED` switch removed the oEmbed REST route, the `json+oembed` discovery link and the `/embed/` rewrite rule — WordPress needs all three to render an internal embed, so the cards silently degraded to plain links.
+* The switch is now split in two: external oEmbed discovery (off by default, unchanged) and this site's own oEmbed endpoints and `/embed/` routes (kept by default). `PH_DISABLE_OEMBED` still works and pins both fields; the new constants are `PH_DISABLE_OEMBED_EXTERNAL` and `PH_DISABLE_OEMBED_ROUTES`. If you had "Disable oEmbed" ticked, only the external half carries over on upgrade and internal embeds start working again.
+* New: `/embed/` pages are sent with `X-Robots-Tag: noindex, follow` and `Cache-Control: public, max-age=3600, s-maxage=86400`, so crawl load is absorbed by the CDN rather than blocked. `Disallow: /*/embed/` is written to robots.txt only when the routes are actually removed.
+* New: rewrite rules are rebuilt automatically after a version upgrade, including in mu-plugin mode where no activation hook exists.
 
 = 1.6.0 =
 * Skipping row counts on widget and page-builder queries is now an opt-in setting, off by default. It previously always applied and could silently blank out post lists in themes and page builders that read `found_posts` (Elementor's post widgets among them).

@@ -1,6 +1,6 @@
 # Omni Performance Hardening
 
-一支單檔外掛（可作為一般外掛或 must-use plugin 安裝），用來收斂 WordPress 站台上最消耗資源的幾類請求：站內搜尋的全表掃描、封存頁的 `SQL_CALC_FOUND_ROWS`、低價值 Feed 與 oEmbed 端點，並為 CDN 提供正確的快取標頭。
+一支單檔外掛（可作為一般外掛或 must-use plugin 安裝），用來收斂 WordPress 站台上最消耗資源的幾類請求：站內搜尋的全表掃描、封存頁的 `SQL_CALC_FOUND_ROWS`、低價值 Feed 與外部 oEmbed 探索，並為 CDN 提供正確的快取標頭。
 
 適用情境為**內容量大、爬蟲流量高的站台**（新聞、媒體、內容聚合），特別是文章數上萬、標籤數逼近或超過文章數的站。
 
@@ -31,10 +31,9 @@
 sudo cp omni-performance-hardening.php /var/www/html/wp-content/mu-plugins/
 sudo chown www-data:www-data /var/www/html/wp-content/mu-plugins/omni-performance-hardening.php
 sudo php -l /var/www/html/wp-content/mu-plugins/omni-performance-hardening.php
-
-# 重建 rewrite rules（oEmbed 路由移除後必要）
-sudo -u www-data wp rewrite flush --path=/var/www/html
 ```
+
+外掛會在版本變動時自動重建 rewrite rules（mu-plugin 模式沒有啟用 hook，故改以版本編號比對觸發），一般無需手動處理。若 `/embed/` 之類的路由行為與設定不符，可執行 `wp rewrite flush --path=/var/www/html` 強制重建。
 
 mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩種方式同時安裝時只有先載入的 mu-plugin 版生效。
 
@@ -62,12 +61,27 @@ mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩
 | `PH_CACHE_HEADERS` | `true` | 端點層級的快取與 robots 標頭 |
 | `PH_AUTHOR_HARDENING` | `false` | 作者頁收斂：作者頁 `noindex`、author feed 回 410、robots.txt 封鎖 `/author/`。多數站台需要作者頁，故預設關閉；不希望作者頁進搜尋結果時設為 `true` |
 | `PH_HEARTBEAT_TUNING` | `true` | Heartbeat 調頻 |
-| `PH_DISABLE_OEMBED` | `true` | 停用 oEmbed 端點與 `/embed/` 路由 |
+| `PH_DISABLE_OEMBED_EXTERNAL` | `true` | 停用外部 oEmbed 探索（`embed_oembed_discover`）。不影響核心 provider 清單上的 YouTube、X、Vimeo 等 |
+| `PH_DISABLE_OEMBED_ROUTES` | `false` | 停用自家的 oEmbed REST 端點、discovery link 與 `/embed/` 路由。**會使自家文章的內部嵌入失效**，故預設關閉 |
 | `PH_DISABLE_XMLRPC` | `true` | 停用 XML-RPC 與 pingback |
 | `PH_HTTP_THROTTLE` | `true` | 前台外部 HTTP 請求逾時上限 |
 | `PH_MANAGE_ROBOTS_TXT` | `true` | 接管虛擬 robots.txt |
 | `PH_BLOCK_USER_ENUM` | `true` | 停用未登入者的 REST 使用者列舉 |
 | `PH_DASHBOARD_WIDGETS` | `true` | 移除「WordPress 活動及新聞」與 W3 Total Cache 最新消息 widget |
+
+#### oEmbed 的兩段式設定
+
+1.7.0 之前只有單一的 `PH_DISABLE_OEMBED`，同時移除外部探索與自家端點。後者會讓「貼上自家文章網址自動變成卡片」的內部嵌入失效——WordPress 的內部嵌入依賴 `wp_oembed_register_route`（`/wp-json/oembed/1.0/embed` 端點）、`wp_oembed_add_discovery_links`（`<head>` 的 `json+oembed` 連結）與 `/embed/` 的 rewrite rule，三者缺一即壞，故拆成兩個開關並將路由改為預設保留。
+
+`/embed/` 的爬取成本改以標頭收斂：保留路由時，該端點會送出 `X-Robots-Tag: noindex, follow` 與 `Cache-Control: public, max-age=3600, s-maxage=86400`，重複抓取由 CDN 邊緣吸收。**刻意不用 `Disallow`**——爬蟲被擋在門外就讀不到 `noindex`，既有的 `/embed/` 網址反而可能以「已建立索引但遭封鎖」的狀態長期滯留；`Disallow: /*/embed/` 僅在 `PH_DISABLE_OEMBED_ROUTES` 為 `true`（端點確實已移除）時才會寫入 robots.txt。
+
+**既有的 `PH_DISABLE_OEMBED` 仍然有效**，會同時鎖定上述兩個欄位，`wp-config.php` 不需修改。若站台使用內部嵌入，將其改為 `false`、或移除後改用細分常數：
+
+```php
+// 保留內部嵌入所需的端點，僅停用外部探索。
+define( 'PH_DISABLE_OEMBED_EXTERNAL', true );
+define( 'PH_DISABLE_OEMBED_ROUTES', false );
+```
 
 ### 搜尋
 
@@ -129,6 +143,8 @@ mu-plugin 模式同樣有「設定 → Omni 效能強化」後台頁可用。兩
 - **前台的 Heartbeat script 已停用。** 極少數外掛（如前台即時通知類）依賴前台 Heartbeat，若有此需求將 `PH_HEARTBEAT_TUNING` 設為 `false`。
 - **REST 型外掛不受逾時限制。** TTS、翻譯、AI 類外掛常透過 `register_rest_route` 呼叫外部 API，此時 `is_admin()` 為 `false`。本外掛已排除 REST / AJAX / cron / WP-CLI / 已登入者，若仍遇到 `cURL error 28`，將 `PH_HTTP_THROTTLE` 設為 `false`。
 - **`PH_REMOVE_FEED_LINKS` 會一併移除分類 Feed 的 discovery link。** 既有的 Feed URL 仍可正常存取，僅影響自動探索。
+- **`PH_DISABLE_OEMBED_ROUTES` 會使自家文章的內部嵌入無法顯示。** WordPress 仍會輸出嵌入卡片的 `<iframe>`，但它初始為 `visibility: hidden`，要等 iframe 內容（`/{permalink}/embed/`）回傳高度才會現形；路由移除後該網址回 404，卡片因此永遠不顯示，訪客只看得到後備的 `<blockquote>` 純連結。把內部嵌入當成內容編排一部分的站台請維持預設關閉（1.7.0 起已是預設）。自 1.6.0 以前升級且曾勾選「停用 oEmbed」者，該值不會沿用到路由開關，升級後內部嵌入即恢復；仍想移除路由請於後台重新勾選。
+- **既有的嵌入結果會被快取。** WordPress 將 oEmbed 結果存於 `oembed_cache` post type 與 `_oembed_*` postmeta，先前失敗的結果不會自動重抓。恢復端點後請重新儲存該篇文章，或執行 `wp transient delete --all`。
 - **robots.txt 僅在無實體檔案時生效。** 若根目錄存在 `robots.txt`，WordPress 的 `robots_txt` filter 不會被呼叫。
 - **CDN 若代管 robots.txt**（例如 Cloudflare Managed robots.txt），其內容會附加在本外掛的規則之前，兩者並存。
 
@@ -151,6 +167,22 @@ curl -s -o /dev/null -D - "$SITE/author/admin/feed/" | head -1
 
 # robots.txt
 curl -s "$SITE/robots.txt"
+```
+
+內部嵌入（`PH_DISABLE_OEMBED_ROUTES` 為 `false` 時）：
+
+```bash
+SITE=https://example.com
+POST=$SITE/2026/01/01/some-post/
+
+# oEmbed 端點應回 200 與 JSON
+curl -s "$SITE/wp-json/oembed/1.0/embed?url=$POST" | head -c 200
+
+# <head> 應有 discovery link
+curl -s "$POST" | grep -o 'json+oembed[^>]*' | head -2
+
+# /embed/ 應回 200，並帶 noindex 與長效 s-maxage
+curl -s -o /dev/null -D - "${POST}embed/" | grep -iE "^(HTTP|x-robots|cache-control)"
 ```
 
 搭配伺服器端指標觀察：
@@ -180,7 +212,3 @@ sudo grep -c 'executing too slow' /var/log/php8.4-fpm.log
 ## 授權
 
 GPL-2.0-or-later
-
-## License / 授權條款
-
-This project is licensed under the [GNU General Public License v2.0 or later (GPL-2.0-or-later)](LICENSE).

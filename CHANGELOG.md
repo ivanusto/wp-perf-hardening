@@ -3,6 +3,44 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.7.0] - 2026-08-01
+
+### 修正
+
+- **停用 oEmbed 不再連自家文章的內部嵌入一起關掉。** 原本單一的
+  `PH_DISABLE_OEMBED` 會一併移除 `wp_oembed_register_route`（`/wp-json/oembed/1.0/embed`
+  端點）、`wp_oembed_add_discovery_links`（`<head>` 的 `json+oembed` 連結）與
+  `/embed/` 的 rewrite rule，而 WordPress 的內部嵌入（貼上自家網址自動變成卡片）
+  三者缺一即失效。`<iframe>` 仍會輸出，但它要等 `/embed/` 回傳高度才會由
+  `visibility: hidden` 現形，路由移除後該網址回 404，卡片因此永遠不顯示，
+  只剩後備的純連結，且畫面上沒有任何線索指出原因。
+  於實際站台（cyberq.tw）重現，並於 WordPress 7.0.2 驗證修正
+
+### 變更（不相容）
+
+- **`PH_DISABLE_OEMBED` 拆成兩個獨立開關**，取捨不同的兩件事不再綁在一起：
+
+  | 常數 | 預設 | 行為 |
+  |---|---|---|
+  | `PH_DISABLE_OEMBED_EXTERNAL` | `true` | 停用 `embed_oembed_discover`，不對未知網址發出探測請求 |
+  | `PH_DISABLE_OEMBED_ROUTES` | `false` | 停用自家的 oEmbed REST 端點、discovery link 與 `/embed/` 路由 |
+
+  **舊的 `PH_DISABLE_OEMBED` 仍然有效**，會同時鎖定兩個欄位，既有 `wp-config.php`
+  不需修改；使用內部嵌入的站台將其設為 `false`，或改用上述細分常數。
+  後台曾勾選「停用 oEmbed」者，升級後該值只沿用到外部探索，路由回到新的預設
+  （保留），內部嵌入即恢復正常——仍想移除路由請於後台重新勾選
+
+### 新增
+
+- **`/embed/` 端點的快取與 robots 標頭**（隨「快取與 robots 標頭」開關）：
+  送出 `X-Robots-Tag: noindex, follow` 與 `Cache-Control: public, max-age=3600, s-maxage=86400`。
+  以標頭而非封鎖來收斂爬取成本，功能不受影響
+- robots.txt 的 `Disallow: /*/embed/` 改為僅在 `PH_DISABLE_OEMBED_ROUTES` 為 `true`
+  時寫入。端點保留時用 `Disallow` 會讓爬蟲讀不到 `noindex`，既有網址可能以
+  「已建立索引但遭封鎖」的狀態長期滯留，改以 `noindex` 控制較精準
+- 版本升級時自動重建 rewrite rules（比對 `omni_performance_hardening_version` 選項）。
+  升級不會觸發啟用 hook，mu-plugin 模式更是完全沒有該 hook，原本需手動 flush
+
 ## [1.6.0] - 2026-07-31
 
 ### 修正

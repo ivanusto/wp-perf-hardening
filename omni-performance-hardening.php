@@ -3,7 +3,7 @@
  * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/omni-wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.6.0
+ * Version:      1.7.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -16,7 +16,7 @@
  * 兩種安裝方式：
  * 1. 一般外掛：置於 wp-content/plugins/ 並啟用，於「設定 → Omni 效能強化」調整參數。
  * 2. mu-plugin：置於 wp-content/mu-plugins/omni-performance-hardening.php，無需啟用。
- *    部署後請至「設定 → 固定網址」按一次儲存，或執行 `wp rewrite flush`。
+ *    rewrite rules 會於版本變動時自動重建，無需手動 flush。
  *
  * 參數優先序：wp-config.php 的 PH_* 常數 > 後台設定 > 預設值。
  * 已定義的常數會鎖定後台對應欄位。完整清單見 README.md。
@@ -33,6 +33,9 @@ if ( defined( 'PH_LOADED' ) ) {
 	return;
 }
 define( 'PH_LOADED', true );
+
+// 用於偵測版本升級，以便重建 rewrite rules；與 PH_* 設定常數無關。
+define( 'OMNI_PERFORMANCE_HARDENING_VERSION', '1.7.0' );
 
 // 載入翻譯：源語言為英文，languages/ 內附 zh_TW。
 // mu-plugin 模式需將 languages/ 一併放入 mu-plugins/。
@@ -76,7 +79,10 @@ function omni_performance_hardening_defaults() {
 		// 多數站台需要作者頁，預設不收斂；需要時再開啟。
 		'author_hardening'        => false,
 		'heartbeat_tuning'        => true,
-		'disable_oembed'          => true,
+		// 不主動探索未知來源，成本高且對內部嵌入無影響。
+		'disable_oembed_external' => true,
+		// 會使自家文章的內部嵌入無法顯示（詳見 README），故預設保留路由。
+		'disable_oembed_routes'   => false,
 		'disable_xmlrpc'          => true,
 		'http_throttle'           => true,
 		'manage_robots_txt'       => true,
@@ -109,6 +115,50 @@ function omni_performance_hardening_defaults() {
 }
 
 /**
+ * 取得鎖定某設定的常數名稱；未被常數鎖定時回傳空字串。
+ *
+ * 1.7.0 起 disable_oembed 拆成 external / routes 兩段，舊的
+ * PH_DISABLE_OEMBED 仍同時鎖定兩者，既有 wp-config.php 不需修改。
+ *
+ * @param string $key omni_performance_hardening_defaults() 中的鍵名。
+ * @return string 常數名稱或空字串。
+ */
+function omni_performance_hardening_locking_constant( $key ) {
+
+	$const = 'PH_' . strtoupper( $key );
+	if ( defined( $const ) ) {
+		return $const;
+	}
+
+	if ( defined( 'PH_DISABLE_OEMBED' )
+		&& in_array( $key, array( 'disable_oembed_external', 'disable_oembed_routes' ), true ) ) {
+		return 'PH_DISABLE_OEMBED';
+	}
+
+	return '';
+}
+
+/**
+ * 讀取後台儲存值並補齊預設值；不套用 wp-config.php 常數。
+ *
+ * @return array
+ */
+function omni_performance_hardening_options() {
+
+	$saved = get_option( 'omni_performance_hardening_settings' );
+	$saved = is_array( $saved ) ? $saved : array();
+
+	// 1.7.0 之前的單一 disable_oembed 選項：只承接「不主動探索外部來源」
+	// 這一半。內部嵌入所依賴的路由一律回到新的預設（保留），避免升級後
+	// 站台仍停在自家文章嵌入無法顯示的狀態；需要移除路由者請重新勾選。
+	if ( isset( $saved['disable_oembed'] ) && ! isset( $saved['disable_oembed_external'] ) ) {
+		$saved['disable_oembed_external'] = (bool) $saved['disable_oembed'];
+	}
+
+	return wp_parse_args( $saved, omni_performance_hardening_defaults() );
+}
+
+/**
  * 取得單一設定值。
  *
  * @param string $key omni_performance_hardening_defaults() 中的鍵名。
@@ -117,14 +167,13 @@ function omni_performance_hardening_defaults() {
 function omni_performance_hardening_get( $key ) {
 	static $opts = null;
 
-	$const = 'PH_' . strtoupper( $key );
-	if ( defined( $const ) ) {
+	$const = omni_performance_hardening_locking_constant( $key );
+	if ( '' !== $const ) {
 		return constant( $const );
 	}
 
 	if ( null === $opts ) {
-		$saved = get_option( 'omni_performance_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), omni_performance_hardening_defaults() );
+		$opts = omni_performance_hardening_options();
 	}
 
 	return isset( $opts[ $key ] ) ? $opts[ $key ] : null;
@@ -278,7 +327,19 @@ if ( omni_performance_hardening_get( 'cache_headers' ) ) {
 
 	add_action( 'template_redirect', function () {
 
-		// 3a. Feed。
+		// 3a. 內部文章嵌入的 iframe 內容頁（/{permalink}/embed/）。
+		//
+		// 這是爬蟲的高頻目標，但內部嵌入需要它正常運作，因此不封鎖而是
+		// 以標頭收斂：noindex 讓搜尋引擎讀得到並主動排除（Disallow 反而
+		// 會讓既有網址停在「已建立索引但遭封鎖」狀態），長效 s-maxage
+		// 讓重複抓取由 CDN 邊緣吸收。內容隨文章更新，故 max-age 保守。
+		if ( is_embed() ) {
+			header( 'X-Robots-Tag: noindex, follow', true );
+			header( 'Cache-Control: public, max-age=3600, s-maxage=86400', true );
+			return;
+		}
+
+		// 3b. Feed。
 		if ( is_feed() ) {
 
 			$low_value = ( is_author() && omni_performance_hardening_get( 'author_hardening' ) )
@@ -306,14 +367,14 @@ if ( omni_performance_hardening_get( 'cache_headers' ) ) {
 			return;
 		}
 
-		// 3b. 搜尋頁。
+		// 3c. 搜尋頁。
 		if ( is_search() ) {
 			header( 'X-Robots-Tag: noindex, nofollow, noarchive', true );
 			header( 'Cache-Control: public, max-age=60, s-maxage=1800' );
 			return;
 		}
 
-		// 3c. 標籤頁：薄內容標記 noindex，避免搜尋引擎反覆回爬。
+		// 3d. 標籤頁：薄內容標記 noindex，避免搜尋引擎反覆回爬。
 		if ( is_tag() ) {
 			if ( omni_performance_hardening_get( 'thin_term_count' ) > 0 ) {
 				$term = get_queried_object();
@@ -325,7 +386,7 @@ if ( omni_performance_hardening_get( 'cache_headers' ) ) {
 			return;
 		}
 
-		// 3d. 作者頁與深層分頁。
+		// 3e. 作者頁與深層分頁。
 		$deep = omni_performance_hardening_get( 'deep_page_noindex' ) > 0
 			&& is_archive()
 			&& (int) get_query_var( 'paged' ) > omni_performance_hardening_get( 'deep_page_noindex' );
@@ -336,7 +397,7 @@ if ( omni_performance_hardening_get( 'cache_headers' ) ) {
 	}, 1 );
 
 	/**
-	 * 3e. 404 快取標頭。
+	 * 3f. 404 快取標頭。
 	 *
 	 * 掛在較晚的優先度，以覆蓋主題或其他外掛送出的 nocache_headers()。
 	 * 讓 CDN 得以吸收機器人產生的大量重複 404；s-maxage 保守設定，
@@ -393,16 +454,31 @@ if ( omni_performance_hardening_get( 'heartbeat_tuning' ) ) {
 }
 
 /* -------------------------------------------------------------------------
- * 5. 停用 oEmbed 端點
+ * 5. oEmbed
  *
- * /{permalink}/embed/ 是常見的爬蟲深淵，且多數新聞站並不依賴它。
+ * 分成兩段獨立控制，因為兩者的取捨完全不同：
+ *
+ * - 外部探索（預設停用）：對未列於核心 provider 清單的網址發出 HTTP 請求
+ *   探測 oEmbed 端點。成本高、失敗率高，且與自家內容無關。
+ * - 自家端點與 /embed/ 路由（預設保留）：/{permalink}/embed/ 確實是爬蟲
+ *   深淵，但 WordPress 的「內部文章嵌入」（貼上自家網址自動變成卡片）
+ *   正是靠這組路由、REST 端點與 <head> 的 discovery link 運作。整組移除
+ *   會讓把嵌入當內容編排的站台直接壞掉，故改為需明確開啟。
+ *   保留路由時，/embed/ 頁面會送出 noindex 與長效 CDN 快取標頭（見第 3 節），
+ *   以標頭而非封鎖來收斂爬取。
  * ---------------------------------------------------------------------- */
 
-if ( omni_performance_hardening_get( 'disable_oembed' ) ) {
+if ( omni_performance_hardening_get( 'disable_oembed_external' ) ) {
+
+	add_action( 'init', function () {
+		add_filter( 'embed_oembed_discover', '__return_false' );
+	}, 9999 );
+}
+
+if ( omni_performance_hardening_get( 'disable_oembed_routes' ) ) {
 
 	add_action( 'init', function () {
 		remove_action( 'rest_api_init', 'wp_oembed_register_route' );
-		add_filter( 'embed_oembed_discover', '__return_false' );
 		remove_action( 'wp_head', 'wp_oembed_add_discovery_links' );
 		remove_action( 'wp_head', 'wp_oembed_add_host_js' );
 		remove_action( 'template_redirect', 'rest_output_link_header', 11 );
@@ -531,8 +607,14 @@ if ( omni_performance_hardening_get( 'manage_robots_txt' ) ) {
 			$rules[] = 'Disallow: /author/';
 		}
 
+		// 僅在路由已移除時封鎖 /embed/。保留路由時改以 X-Robots-Tag: noindex
+		// 控制索引：Disallow 會讓爬蟲讀不到 noindex，既有網址反而可能以
+		// 「已建立索引但遭封鎖」的狀態長期滯留。
+		if ( omni_performance_hardening_get( 'disable_oembed_routes' ) ) {
+			$rules[] = 'Disallow: /*/embed/';
+		}
+
 		$rules = array_merge( $rules, array(
-			'Disallow: /*/embed/',
 			'Disallow: /xmlrpc.php',
 			'Disallow: /wp-json/',
 			'',
@@ -558,11 +640,11 @@ if ( omni_performance_hardening_get( 'manage_robots_txt' ) ) {
 }
 
 /* -------------------------------------------------------------------------
- * 9. 以一般外掛安裝時的啟用／停用處理
+ * 9. 啟用／停用與版本升級時的 rewrite rules 處理
  *
  * 刪除 rewrite_rules 使其於「下一個」請求依當時的外掛狀態重建，
  * 避免在狀態轉換中的本請求以錯誤的 filter 集合重建。
- * mu-plugin 模式不會觸發這兩個 hook，flush 方式見 README。
+ * mu-plugin 模式不會觸發這兩個 hook，改由下方的版本比對涵蓋。
  * ---------------------------------------------------------------------- */
 
 register_activation_hook( __FILE__, function () {
@@ -572,6 +654,23 @@ register_activation_hook( __FILE__, function () {
 register_deactivation_hook( __FILE__, function () {
 	delete_option( 'rewrite_rules' );
 } );
+
+/**
+ * 版本升級處理。
+ *
+ * oEmbed 設定會改變 rewrite rules 的內容，而升級本身不觸發啟用 hook
+ * （mu-plugin 模式連啟用 hook 都沒有），因此以版本編號比對來偵測。
+ * 刪除後由核心於本請求依當下的 filter 集合重建，站長無需手動 flush。
+ */
+add_action( 'init', function () {
+
+	if ( OMNI_PERFORMANCE_HARDENING_VERSION === get_option( 'omni_performance_hardening_version' ) ) {
+		return;
+	}
+
+	delete_option( 'rewrite_rules' );
+	update_option( 'omni_performance_hardening_version', OMNI_PERFORMANCE_HARDENING_VERSION );
+}, 5 );
 
 /* -------------------------------------------------------------------------
  * 10. 後台設定頁
@@ -589,7 +688,8 @@ if ( is_admin() ) {
 				'cache_headers'     => array( 'bool', __( 'Cache & robots headers', 'omni-performance-hardening' ), __( 'Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s', 'omni-performance-hardening' ) ),
 				'author_hardening'  => array( 'bool', __( 'Author page hardening', 'omni-performance-hardening' ), __( 'Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Off by default; enable it only on sites that do not want author archives in search results', 'omni-performance-hardening' ) ),
 				'heartbeat_tuning'  => array( 'bool', __( 'Heartbeat tuning', 'omni-performance-hardening' ), __( 'Slow down admin polling and disable the frontend Heartbeat', 'omni-performance-hardening' ) ),
-				'disable_oembed'    => array( 'bool', __( 'Disable oEmbed', 'omni-performance-hardening' ), __( 'Remove the /embed/ routes and oEmbed endpoints; rewrite rules rebuild automatically after toggling', 'omni-performance-hardening' ) ),
+				'disable_oembed_external' => array( 'bool', __( 'Disable external oEmbed discovery', 'omni-performance-hardening' ), __( 'Stops WordPress from probing arbitrary URLs for an oEmbed endpoint when a link is pasted. Providers on the built-in list — YouTube, X, Vimeo and the rest — still embed normally', 'omni-performance-hardening' ) ),
+				'disable_oembed_routes'   => array( 'bool', __( 'Disable oEmbed endpoints and /embed/ routes', 'omni-performance-hardening' ), __( 'Removes this site\'s own oEmbed REST endpoint, its discovery links and the /embed/ pages. Off by default: WordPress needs all three to turn a pasted link to your own post into an embed card, so enabling this leaves those embeds as plain links. Crawl load on /embed/ is already handled with noindex and a long CDN cache. Rewrite rules rebuild automatically after toggling', 'omni-performance-hardening' ) ),
 				'disable_xmlrpc'    => array( 'bool', __( 'Disable XML-RPC', 'omni-performance-hardening' ), __( 'Including pingback', 'omni-performance-hardening' ) ),
 				'http_throttle'     => array( 'bool', __( 'Frontend external request throttle', 'omni-performance-hardening' ), __( 'Cap external HTTP timeouts on frontend requests from logged-out visitors', 'omni-performance-hardening' ) ),
 				'manage_robots_txt' => array( 'bool', __( 'Manage robots.txt', 'omni-performance-hardening' ), __( 'Only takes effect when no physical robots.txt exists in the site root', 'omni-performance-hardening' ) ),
@@ -644,15 +744,14 @@ if ( is_admin() ) {
 		check_admin_referer( 'ph_save_settings', 'ph_settings_nonce' );
 
 		$defaults = omni_performance_hardening_defaults();
-		$saved    = get_option( 'omni_performance_hardening_settings' );
-		$old      = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		$old      = omni_performance_hardening_options();
 		$post     = wp_unslash( $_POST );
 		$new      = array();
 
 		foreach ( $defaults as $key => $default ) {
 
 			// 常數鎖定的欄位不在表單中，保留原儲存值。
-			if ( defined( 'PH_' . strtoupper( $key ) ) ) {
+			if ( '' !== omni_performance_hardening_locking_constant( $key ) ) {
 				$new[ $key ] = $old[ $key ];
 				continue;
 			}
@@ -677,8 +776,8 @@ if ( is_admin() ) {
 
 		update_option( 'omni_performance_hardening_settings', $new );
 
-		// oEmbed 開關影響 rewrite rules：刪除後於下一個請求依新設定重建。
-		if ( $old['disable_oembed'] !== $new['disable_oembed'] ) {
+		// /embed/ 路由開關影響 rewrite rules：刪除後於下一個請求依新設定重建。
+		if ( $old['disable_oembed_routes'] !== $new['disable_oembed_routes'] ) {
 			delete_option( 'rewrite_rules' );
 		}
 
@@ -698,8 +797,7 @@ if ( is_admin() ) {
 			return;
 		}
 
-		$saved = get_option( 'omni_performance_hardening_settings' );
-		$opts  = wp_parse_args( is_array( $saved ) ? $saved : array(), omni_performance_hardening_defaults() );
+		$opts = omni_performance_hardening_options();
 
 		echo '<div class="wrap"><h1>' . esc_html__( 'Omni Performance Hardening', 'omni-performance-hardening' ) . '</h1>';
 
@@ -732,8 +830,8 @@ if ( is_admin() ) {
 
 				list( $type, $label, $desc ) = $field;
 
-				$const  = 'PH_' . strtoupper( $key );
-				$locked = defined( $const );
+				$const  = omni_performance_hardening_locking_constant( $key );
+				$locked = ( '' !== $const );
 				$value  = $locked ? constant( $const ) : $opts[ $key ];
 				$name   = 'ph_' . $key;
 
