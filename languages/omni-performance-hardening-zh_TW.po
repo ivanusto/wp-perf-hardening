@@ -3,7 +3,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Omni Performance Hardening 1.7.0\n"
+"Project-Id-Version: Omni Performance Hardening 1.8.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/omni-performance-hardening\n"
 "Last-Translator: ivanusto\n"
 "Language-Team: Chinese (Taiwan)\n"
@@ -12,8 +12,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"POT-Creation-Date: 2026-08-01T00:00:00+00:00\n"
-"PO-Revision-Date: 2026-08-01T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-08-05T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-08-05T00:00:00+00:00\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: omni-performance-hardening\n"
 
@@ -141,6 +141,12 @@ msgstr "非中日韓長字串門檻"
 
 msgid "Strings longer than this without CJK characters are treated as junk probes; 0 disables"
 msgstr "超過此長度且不含中日韓字元視為垃圾探測，0 停用"
+
+msgid "Skip result count on search"
+msgstr "搜尋查詢略過總筆數計算"
+
+msgid "Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site"
+msgstr "搜尋查詢關閉 SQL_CALC_FOUND_ROWS。預設關閉：此設定會使 found_posts 為 0，佈景主題因此不輸出分頁連結，搜尋結果看起來只剩一頁——1.8.0 之前此行為固定開啟。僅在不需要搜尋分頁的站台開啟"
 
 msgid "Archives & feeds"
 msgstr "封存頁與 Feed"

@@ -94,8 +94,11 @@ define( 'PH_DISABLE_OEMBED_ROUTES', false );
 | `PH_SEARCH_PER_PAGE` | `10` | 每頁筆數 |
 | `PH_SEARCH_TITLE_ONLY` | `true` | 只比對標題與摘要（需 WP 6.2+） |
 | `PH_SEARCH_LATIN_MAX` | `20` | 非中日韓長字串的垃圾判定門檻，`0` 停用 |
+| `PH_SEARCH_NO_FOUND_ROWS` | `false` | 搜尋查詢略過總筆數計算。**開啟會使搜尋分頁連結消失**（見下方說明） |
 
 `PH_SEARCH_TITLE_ONLY` 是效能與涵蓋率的取捨。中文新聞站的關鍵字多半出現在標題，開啟後掃描成本大幅下降；若使用者反映搜尋不到內文關鍵字，設為 `false` 即可，其餘防護不受影響。
+
+`PH_SEARCH_NO_FOUND_ROWS` 自 1.8.0 起為獨立設定並預設關閉（處理方式同 1.6.0 的 `PH_SECONDARY_NO_FOUND_ROWS`）。1.8.0 之前搜尋防護會無條件套用 `no_found_rows`，`found_posts` 與 `max_num_pages` 因此為 `0`，佈景主題不輸出分頁連結，原本上百頁的搜尋看起來只剩一頁。搜尋不像標籤頁有現成的 term count 可便宜還原總頁數，省下這筆計算就只能捨棄分頁，故交由站台自行取捨。另外注意 `PH_SEARCH_MAX_PAGES`（預設 `3`）仍會讓超過上限的分頁回空結果，需要更深的搜尋分頁請一併調高或設為 `0`。
 
 ### 封存頁與 Feed
 

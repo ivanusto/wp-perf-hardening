@@ -2,23 +2,23 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Omni Performance Hardening 1.7.0\n"
+"Project-Id-Version: Omni Performance Hardening 1.8.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/omni-performance-hardening\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-01T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-08-05T00:00:00+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: omni-performance-hardening\n"
 
 #. Plugin Name of the plugin
 #: omni-performance-hardening.php
-#: omni-performance-hardening.php:727
-#: omni-performance-hardening.php:728
-#: omni-performance-hardening.php:802
+#: omni-performance-hardening.php:738
+#: omni-performance-hardening.php:739
+#: omni-performance-hardening.php:813
 msgid "Omni Performance Hardening"
 msgstr ""
 
@@ -42,272 +42,280 @@ msgstr ""
 msgid "https://github.com/ivanusto"
 msgstr ""
 
-#: omni-performance-hardening.php:684
+#: omni-performance-hardening.php:695
 msgid "Feature switches"
 msgstr ""
 
-#: omni-performance-hardening.php:685
+#: omni-performance-hardening.php:696
 msgid "Search hardening"
 msgstr ""
 
-#: omni-performance-hardening.php:685
+#: omni-performance-hardening.php:696
 msgid "Filter junk search probes and narrow the query scope"
 msgstr ""
 
-#: omni-performance-hardening.php:686
+#: omni-performance-hardening.php:697
 msgid "Archive query slimming"
 msgstr ""
 
-#: omni-performance-hardening.php:686
+#: omni-performance-hardening.php:697
 msgid "Drop SQL_CALC_FOUND_ROWS on tag, author and date archives"
 msgstr ""
 
-#: omni-performance-hardening.php:687
+#: omni-performance-hardening.php:698
 msgid "Skip counts on widget queries"
 msgstr ""
 
-#: omni-performance-hardening.php:687
+#: omni-performance-hardening.php:698
 msgid "Drops SQL_CALC_FOUND_ROWS on sidebar, related-post and page-builder queries. Off by default: it sets found_posts to 0, and themes or page builders that read that value — Elementor post widgets, custom pagination — will render an empty list. Turn it on, then check that every post listing on your site still appears"
 msgstr ""
 
-#: omni-performance-hardening.php:688
+#: omni-performance-hardening.php:699
 msgid "Cache & robots headers"
 msgstr ""
 
-#: omni-performance-hardening.php:688
+#: omni-performance-hardening.php:699
 msgid "Send Cache-Control and X-Robots-Tag per endpoint type for feeds, search, tag pages and 404s"
 msgstr ""
 
-#: omni-performance-hardening.php:689
+#: omni-performance-hardening.php:700
 msgid "Author page hardening"
 msgstr ""
 
-#: omni-performance-hardening.php:689
+#: omni-performance-hardening.php:700
 msgid "Author pages get noindex, author feeds return 410 and robots.txt blocks /author/. Off by default; enable it only on sites that do not want author archives in search results"
 msgstr ""
 
-#: omni-performance-hardening.php:690
+#: omni-performance-hardening.php:701
 msgid "Heartbeat tuning"
 msgstr ""
 
-#: omni-performance-hardening.php:690
+#: omni-performance-hardening.php:701
 msgid "Slow down admin polling and disable the frontend Heartbeat"
 msgstr ""
 
-#: omni-performance-hardening.php:691
+#: omni-performance-hardening.php:702
 msgid "Disable external oEmbed discovery"
 msgstr ""
 
-#: omni-performance-hardening.php:691
+#: omni-performance-hardening.php:702
 msgid "Stops WordPress from probing arbitrary URLs for an oEmbed endpoint when a link is pasted. Providers on the built-in list — YouTube, X, Vimeo and the rest — still embed normally"
 msgstr ""
 
-#: omni-performance-hardening.php:692
+#: omni-performance-hardening.php:703
 msgid "Disable oEmbed endpoints and /embed/ routes"
 msgstr ""
 
-#: omni-performance-hardening.php:692
+#: omni-performance-hardening.php:703
 msgid "Removes this site's own oEmbed REST endpoint, its discovery links and the /embed/ pages. Off by default: WordPress needs all three to turn a pasted link to your own post into an embed card, so enabling this leaves those embeds as plain links. Crawl load on /embed/ is already handled with noindex and a long CDN cache. Rewrite rules rebuild automatically after toggling"
 msgstr ""
 
-#: omni-performance-hardening.php:693
+#: omni-performance-hardening.php:704
 msgid "Disable XML-RPC"
 msgstr ""
 
-#: omni-performance-hardening.php:693
+#: omni-performance-hardening.php:704
 msgid "Including pingback"
 msgstr ""
 
-#: omni-performance-hardening.php:694
+#: omni-performance-hardening.php:705
 msgid "Frontend external request throttle"
 msgstr ""
 
-#: omni-performance-hardening.php:694
+#: omni-performance-hardening.php:705
 msgid "Cap external HTTP timeouts on frontend requests from logged-out visitors"
 msgstr ""
 
-#: omni-performance-hardening.php:695
+#: omni-performance-hardening.php:706
 msgid "Manage robots.txt"
 msgstr ""
 
-#: omni-performance-hardening.php:695
+#: omni-performance-hardening.php:706
 msgid "Only takes effect when no physical robots.txt exists in the site root"
 msgstr ""
 
-#: omni-performance-hardening.php:696
+#: omni-performance-hardening.php:707
 msgid "Block REST user enumeration"
 msgstr ""
 
-#: omni-performance-hardening.php:696
+#: omni-performance-hardening.php:707
 msgid "Logged-out visitors cannot access /wp/v2/users"
 msgstr ""
 
-#: omni-performance-hardening.php:697
+#: omni-performance-hardening.php:708
 msgid "Remove news dashboard widgets"
 msgstr ""
 
-#: omni-performance-hardening.php:697
+#: omni-performance-hardening.php:708
 msgid "Removes the WordPress Events and News widget, and the W3 Total Cache news widget if present. These fetch remote data every time the dashboard loads"
 msgstr ""
 
-#: omni-performance-hardening.php:699
+#: omni-performance-hardening.php:710
 msgid "Search"
 msgstr ""
 
-#: omni-performance-hardening.php:700
+#: omni-performance-hardening.php:711
 msgid "Minimum keyword length"
 msgstr ""
 
-#: omni-performance-hardening.php:701
+#: omni-performance-hardening.php:712
 msgid "Maximum keyword length"
 msgstr ""
 
-#: omni-performance-hardening.php:702
+#: omni-performance-hardening.php:713
 msgid "Word count limit"
 msgstr ""
 
-#: omni-performance-hardening.php:702
+#: omni-performance-hardening.php:713
 msgid "Whitespace-separated words; 0 disables"
 msgstr ""
 
-#: omni-performance-hardening.php:703
+#: omni-performance-hardening.php:714
 msgid "Result pages limit"
 msgstr ""
 
-#: omni-performance-hardening.php:703
+#: omni-performance-hardening.php:714
 msgid "0 disables"
 msgstr ""
 
-#: omni-performance-hardening.php:704
+#: omni-performance-hardening.php:715
 msgid "Results per page"
 msgstr ""
 
-#: omni-performance-hardening.php:705
+#: omni-performance-hardening.php:716
 msgid "Match titles and excerpts only"
 msgstr ""
 
-#: omni-performance-hardening.php:705
+#: omni-performance-hardening.php:716
 msgid "Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content"
 msgstr ""
 
-#: omni-performance-hardening.php:706
+#: omni-performance-hardening.php:717
 msgid "Non-CJK long string threshold"
 msgstr ""
 
-#: omni-performance-hardening.php:706
+#: omni-performance-hardening.php:717
 msgid "Strings longer than this without CJK characters are treated as junk probes; 0 disables"
 msgstr ""
 
-#: omni-performance-hardening.php:708
-msgid "Archives & feeds"
-msgstr ""
-
-#: omni-performance-hardening.php:709
-msgid "Archive posts per page"
-msgstr ""
-
-#: omni-performance-hardening.php:710
-msgid "Thin tag threshold"
-msgstr ""
-
-#: omni-performance-hardening.php:710
-msgid "Tag pages with this many posts or fewer are marked noindex; 0 disables"
-msgstr ""
-
-#: omni-performance-hardening.php:711
-msgid "Deep pagination threshold"
-msgstr ""
-
-#: omni-performance-hardening.php:711
-msgid "Pages beyond this number are marked noindex; 0 disables"
-msgstr ""
-
-#: omni-performance-hardening.php:712
-msgid "Feed policy"
-msgstr ""
-
-#: omni-performance-hardening.php:712
-msgid "Check which feed paths your content partners subscribe to before deploying"
-msgstr ""
-
-#: omni-performance-hardening.php:713
-msgid "Remove extra feed discovery links"
-msgstr ""
-
-#: omni-performance-hardening.php:713
-msgid "Also removes category feed discovery links; existing feed URLs keep working"
-msgstr ""
-
-#: omni-performance-hardening.php:714
-msgid "Tag feed items"
-msgstr ""
-
-#: omni-performance-hardening.php:714
-msgid "0 leaves the default untouched"
-msgstr ""
-
-#: omni-performance-hardening.php:715
-msgid "External feed cache hours"
-msgstr ""
-
-#: omni-performance-hardening.php:715
-msgid "Cache lifetime for fetch_feed() results"
-msgstr ""
-
-#: omni-performance-hardening.php:717
-msgid "Other"
+#: omni-performance-hardening.php:718
+msgid "Skip result count on search"
 msgstr ""
 
 #: omni-performance-hardening.php:718
-msgid "Frontend external timeout (seconds)"
-msgstr ""
-
-#: omni-performance-hardening.php:718
-msgid "Cap on external HTTP calls during frontend requests from logged-out visitors"
+msgid "Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site"
 msgstr ""
 
 #: omni-performance-hardening.php:719
-msgid "Editor Heartbeat interval (seconds)"
+msgid "Archives & feeds"
 msgstr ""
 
 #: omni-performance-hardening.php:720
+msgid "Archive posts per page"
+msgstr ""
+
+#: omni-performance-hardening.php:721
+msgid "Thin tag threshold"
+msgstr ""
+
+#: omni-performance-hardening.php:721
+msgid "Tag pages with this many posts or fewer are marked noindex; 0 disables"
+msgstr ""
+
+#: omni-performance-hardening.php:722
+msgid "Deep pagination threshold"
+msgstr ""
+
+#: omni-performance-hardening.php:722
+msgid "Pages beyond this number are marked noindex; 0 disables"
+msgstr ""
+
+#: omni-performance-hardening.php:723
+msgid "Feed policy"
+msgstr ""
+
+#: omni-performance-hardening.php:723
+msgid "Check which feed paths your content partners subscribe to before deploying"
+msgstr ""
+
+#: omni-performance-hardening.php:724
+msgid "Remove extra feed discovery links"
+msgstr ""
+
+#: omni-performance-hardening.php:724
+msgid "Also removes category feed discovery links; existing feed URLs keep working"
+msgstr ""
+
+#: omni-performance-hardening.php:725
+msgid "Tag feed items"
+msgstr ""
+
+#: omni-performance-hardening.php:725
+msgid "0 leaves the default untouched"
+msgstr ""
+
+#: omni-performance-hardening.php:726
+msgid "External feed cache hours"
+msgstr ""
+
+#: omni-performance-hardening.php:726
+msgid "Cache lifetime for fetch_feed() results"
+msgstr ""
+
+#: omni-performance-hardening.php:728
+msgid "Other"
+msgstr ""
+
+#: omni-performance-hardening.php:729
+msgid "Frontend external timeout (seconds)"
+msgstr ""
+
+#: omni-performance-hardening.php:729
+msgid "Cap on external HTTP calls during frontend requests from logged-out visitors"
+msgstr ""
+
+#: omni-performance-hardening.php:730
+msgid "Editor Heartbeat interval (seconds)"
+msgstr ""
+
+#: omni-performance-hardening.php:731
 msgid "List screen Heartbeat interval (seconds)"
 msgstr ""
 
-#: omni-performance-hardening.php:808
+#: omni-performance-hardening.php:819
 msgid "Settings saved. Cached pages will reflect changes after the cache expires or is purged."
 msgstr ""
 
 #. translators: 1: PH_* 2: wp-config.php
-#: omni-performance-hardening.php:816
+#: omni-performance-hardening.php:827
 #, php-format
 msgid "Priority: %1$s constants in %2$s > settings on this page > defaults. Fields pinned by a defined constant are locked."
 msgstr ""
 
-#: omni-performance-hardening.php:849
+#: omni-performance-hardening.php:860
 msgid "cache — keep all feeds, only add cache headers"
 msgstr ""
 
-#: omni-performance-hardening.php:850
+#: omni-performance-hardening.php:861
 msgid "strict — author / search / comment feeds return 410 (default)"
 msgstr ""
 
-#: omni-performance-hardening.php:851
+#: omni-performance-hardening.php:862
 msgid "off — keep only the main feed and category feeds"
 msgstr ""
 
 #. translators: %s: constant name, e.g. PH_SEARCH_HARDENING
-#: omni-performance-hardening.php:875
+#: omni-performance-hardening.php:886
 #, php-format
 msgid "Locked by %s; remove the constant from wp-config.php to edit it here."
 msgstr ""
 
-#: omni-performance-hardening.php:887
+#: omni-performance-hardening.php:898
 msgid "Save Settings"
 msgstr ""
 
 #. translators: %s: linked sister plugin name
-#: omni-performance-hardening.php:894
+#: omni-performance-hardening.php:905
 #, php-format
 msgid "Sister plugin: %s — SEO and webmaster tooling from the same team. This plugin keeps your site fast and crawl-efficient; the SEO suite handles visibility and indexing."
 msgstr ""

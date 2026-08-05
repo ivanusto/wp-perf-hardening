@@ -3,6 +3,20 @@
 本專案遵循 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式，
 版本號採用 [語意化版本](https://semver.org/lang/zh-TW/)。
 
+## [1.8.0] - 2026-08-05
+
+### 修正
+
+- **搜尋查詢的 `no_found_rows` 改為可選設定並預設關閉**（`PH_SEARCH_NO_FOUND_ROWS`）。
+  搜尋防護原本無條件套用此優化且沒有開關，`found_posts` 與 `max_num_pages`
+  因此為 `0`，佈景主題不輸出分頁連結——原本上百頁的搜尋結果看起來只剩一頁。
+  處理方式同 1.6.0 的次要查詢（`PH_SECONDARY_NO_FOUND_ROWS`）：拆成獨立設定、
+  預設關閉，確認不需要搜尋分頁後再自行開啟。
+  搜尋沒有如標籤頁 term count 的便宜計數可還原總頁數，省下計算與保留分頁
+  兩者無法兼得，故交由站台取捨。
+  注意 `PH_SEARCH_MAX_PAGES`（預設 `3`）仍會讓超過上限的分頁回空結果，
+  需要更深的搜尋分頁請一併調高或設為 `0`
+
 ## [1.7.0] - 2026-08-01
 
 ### 修正

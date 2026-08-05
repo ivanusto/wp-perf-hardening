@@ -3,7 +3,7 @@
  * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/omni-wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.7.0
+ * Version:      1.8.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -35,7 +35,7 @@ if ( defined( 'PH_LOADED' ) ) {
 define( 'PH_LOADED', true );
 
 // 用於偵測版本升級，以便重建 rewrite rules；與 PH_* 設定常數無關。
-define( 'OMNI_PERFORMANCE_HARDENING_VERSION', '1.7.0' );
+define( 'OMNI_PERFORMANCE_HARDENING_VERSION', '1.8.0' );
 
 // 載入翻譯：源語言為英文，languages/ 內附 zh_TW。
 // mu-plugin 模式需將 languages/ 一併放入 mu-plugins/。
@@ -97,6 +97,8 @@ function omni_performance_hardening_defaults() {
 		'search_per_page'         => 10,
 		'search_title_only'       => true,
 		'search_latin_max'        => 20,
+		// 會使 found_posts 為 0，佈景主題的搜尋分頁連結隨之消失，故預設關閉。
+		'search_no_found_rows'    => false,
 
 		// 封存頁與 Feed。
 		'archive_per_page'        => 10,
@@ -236,8 +238,17 @@ if ( omni_performance_hardening_get( 'search_hardening' ) ) {
 		$query->set( 'post_type', apply_filters( 'omni_performance_hardening_search_post_types', array( 'post' ) ) );
 		$query->set( 'post_status', 'publish' );
 		$query->set( 'posts_per_page', omni_performance_hardening_get( 'search_per_page' ) );
-		$query->set( 'no_found_rows', true );
 		$query->set( 'ignore_sticky_posts', true );
+
+		/**
+		 * no_found_rows 會使 found_posts 與 max_num_pages 為 0，佈景主題因此
+		 * 不輸出分頁連結，上百頁的搜尋結果看起來只剩一頁。1.8.0 起改為
+		 * 預設關閉的獨立設定（同 1.6.0 對次要查詢的處理）；搜尋沒有如
+		 * 標籤頁 term count 的便宜計數可還原總頁數，省下計算就只能捨棄分頁。
+		 */
+		if ( omni_performance_hardening_get( 'search_no_found_rows' ) ) {
+			$query->set( 'no_found_rows', true );
+		}
 
 		if ( omni_performance_hardening_get( 'search_title_only' ) && version_compare( get_bloginfo( 'version' ), '6.2', '>=' ) ) {
 			$query->set( 'search_columns', array( 'post_title', 'post_excerpt' ) );
@@ -704,6 +715,7 @@ if ( is_admin() ) {
 				'search_per_page'   => array( 'int', __( 'Results per page', 'omni-performance-hardening' ), '' ),
 				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'omni-performance-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'omni-performance-hardening' ) ),
 				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'omni-performance-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'omni-performance-hardening' ) ),
+				'search_no_found_rows' => array( 'bool', __( 'Skip result count on search', 'omni-performance-hardening' ), __( 'Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site', 'omni-performance-hardening' ) ),
 			),
 			__( 'Archives & feeds', 'omni-performance-hardening' ) => array(
 				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'omni-performance-hardening' ), '' ),
