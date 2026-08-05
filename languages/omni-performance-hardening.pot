@@ -158,8 +158,16 @@ msgstr ""
 msgid "Minimum keyword length"
 msgstr ""
 
+#: omni-performance-hardening.php:711
+msgid "Shorter keywords are rejected before any query runs. Counted in characters, so two-character CJK words still pass"
+msgstr ""
+
 #: omni-performance-hardening.php:712
 msgid "Maximum keyword length"
+msgstr ""
+
+#: omni-performance-hardening.php:712
+msgid "Longer keywords are treated as junk probes and rejected"
 msgstr ""
 
 #: omni-performance-hardening.php:713
@@ -180,6 +188,10 @@ msgstr ""
 
 #: omni-performance-hardening.php:715
 msgid "Results per page"
+msgstr ""
+
+#: omni-performance-hardening.php:715
+msgid "Search results page only; archives have their own setting below. Minimum 1"
 msgstr ""
 
 #: omni-performance-hardening.php:716
@@ -212,6 +224,10 @@ msgstr ""
 
 #: omni-performance-hardening.php:720
 msgid "Archive posts per page"
+msgstr ""
+
+#: omni-performance-hardening.php:720
+msgid "Applies to tag, taxonomy, author and date archives. Minimum 1"
 msgstr ""
 
 #: omni-performance-hardening.php:721
@@ -278,8 +294,16 @@ msgstr ""
 msgid "Editor Heartbeat interval (seconds)"
 msgstr ""
 
+#: omni-performance-hardening.php:730
+msgid "How often the editor checks for autosaves and post locks. Higher means fewer admin-ajax calls; clamped to 15-300"
+msgstr ""
+
 #: omni-performance-hardening.php:731
 msgid "List screen Heartbeat interval (seconds)"
+msgstr ""
+
+#: omni-performance-hardening.php:731
+msgid "Polling interval on post list screens; clamped to 15-300"
 msgstr ""
 
 #: omni-performance-hardening.php:819

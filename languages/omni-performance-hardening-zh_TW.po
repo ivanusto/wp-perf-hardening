@@ -112,8 +112,14 @@ msgstr "搜尋"
 msgid "Minimum keyword length"
 msgstr "關鍵字最短長度"
 
+msgid "Shorter keywords are rejected before any query runs. Counted in characters, so two-character CJK words still pass"
+msgstr "短於此長度的關鍵字不進行查詢即擋下。以字元數計算，兩字的中文詞仍可通過"
+
 msgid "Maximum keyword length"
 msgstr "關鍵字最長長度"
+
+msgid "Longer keywords are treated as junk probes and rejected"
+msgstr "長於此長度的關鍵字視為垃圾探測並擋下"
 
 msgid "Word count limit"
 msgstr "詞數上限"
@@ -129,6 +135,9 @@ msgstr "0 停用"
 
 msgid "Results per page"
 msgstr "每頁筆數"
+
+msgid "Search results page only; archives have their own setting below. Minimum 1"
+msgstr "僅適用搜尋結果頁；封存頁另有下方的設定。最小值 1"
 
 msgid "Match titles and excerpts only"
 msgstr "只比對標題與摘要"
@@ -153,6 +162,9 @@ msgstr "封存頁與 Feed"
 
 msgid "Archive posts per page"
 msgstr "封存頁每頁筆數"
+
+msgid "Applies to tag, taxonomy, author and date archives. Minimum 1"
+msgstr "適用標籤、分類法、作者與日期封存頁。最小值 1"
 
 msgid "Thin tag threshold"
 msgstr "薄內容標籤門檻"
@@ -202,8 +214,14 @@ msgstr "未登入訪客的前台請求，外部 HTTP 呼叫逾時上限"
 msgid "Editor Heartbeat interval (seconds)"
 msgstr "編輯畫面 Heartbeat 間隔（秒）"
 
+msgid "How often the editor checks for autosaves and post locks. Higher means fewer admin-ajax calls; clamped to 15-300"
+msgstr "編輯畫面檢查自動儲存與文章鎖定的間隔。數值越大 admin-ajax 請求越少；範圍限制在 15-300"
+
 msgid "List screen Heartbeat interval (seconds)"
 msgstr "列表畫面 Heartbeat 間隔（秒）"
+
+msgid "Polling interval on post list screens; clamped to 15-300"
+msgstr "文章列表畫面的輪詢間隔；範圍限制在 15-300"
 
 msgid "Settings saved. Cached pages will reflect changes after the cache expires or is purged."
 msgstr "設定已儲存。快取中的頁面需待快取過期或手動清除後才會反映。"

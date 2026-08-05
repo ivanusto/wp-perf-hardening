@@ -708,17 +708,17 @@ if ( is_admin() ) {
 				'dashboard_widgets' => array( 'bool', __( 'Remove news dashboard widgets', 'omni-performance-hardening' ), __( 'Removes the WordPress Events and News widget, and the W3 Total Cache news widget if present. These fetch remote data every time the dashboard loads', 'omni-performance-hardening' ) ),
 			),
 			__( 'Search', 'omni-performance-hardening' ) => array(
-				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'omni-performance-hardening' ), '' ),
-				'search_max_len'    => array( 'int', __( 'Maximum keyword length', 'omni-performance-hardening' ), '' ),
+				'search_min_len'    => array( 'int', __( 'Minimum keyword length', 'omni-performance-hardening' ), __( 'Shorter keywords are rejected before any query runs. Counted in characters, so two-character CJK words still pass', 'omni-performance-hardening' ) ),
+				'search_max_len'    => array( 'int', __( 'Maximum keyword length', 'omni-performance-hardening' ), __( 'Longer keywords are treated as junk probes and rejected', 'omni-performance-hardening' ) ),
 				'search_max_words'  => array( 'int', __( 'Word count limit', 'omni-performance-hardening' ), __( 'Whitespace-separated words; 0 disables', 'omni-performance-hardening' ) ),
 				'search_max_pages'  => array( 'int', __( 'Result pages limit', 'omni-performance-hardening' ), __( '0 disables', 'omni-performance-hardening' ) ),
-				'search_per_page'   => array( 'int', __( 'Results per page', 'omni-performance-hardening' ), '' ),
+				'search_per_page'   => array( 'int', __( 'Results per page', 'omni-performance-hardening' ), __( 'Search results page only; archives have their own setting below. Minimum 1', 'omni-performance-hardening' ) ),
 				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'omni-performance-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'omni-performance-hardening' ) ),
 				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'omni-performance-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'omni-performance-hardening' ) ),
 				'search_no_found_rows' => array( 'bool', __( 'Skip result count on search', 'omni-performance-hardening' ), __( 'Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site', 'omni-performance-hardening' ) ),
 			),
 			__( 'Archives & feeds', 'omni-performance-hardening' ) => array(
-				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'omni-performance-hardening' ), '' ),
+				'archive_per_page'  => array( 'int', __( 'Archive posts per page', 'omni-performance-hardening' ), __( 'Applies to tag, taxonomy, author and date archives. Minimum 1', 'omni-performance-hardening' ) ),
 				'thin_term_count'   => array( 'int', __( 'Thin tag threshold', 'omni-performance-hardening' ), __( 'Tag pages with this many posts or fewer are marked noindex; 0 disables', 'omni-performance-hardening' ) ),
 				'deep_page_noindex' => array( 'int', __( 'Deep pagination threshold', 'omni-performance-hardening' ), __( 'Pages beyond this number are marked noindex; 0 disables', 'omni-performance-hardening' ) ),
 				'feed_mode'         => array( 'select', __( 'Feed policy', 'omni-performance-hardening' ), __( 'Check which feed paths your content partners subscribe to before deploying', 'omni-performance-hardening' ) ),
@@ -728,8 +728,8 @@ if ( is_admin() ) {
 			),
 			__( 'Other', 'omni-performance-hardening' ) => array(
 				'frontend_timeout'  => array( 'int', __( 'Frontend external timeout (seconds)', 'omni-performance-hardening' ), __( 'Cap on external HTTP calls during frontend requests from logged-out visitors', 'omni-performance-hardening' ) ),
-				'heartbeat_edit'    => array( 'int', __( 'Editor Heartbeat interval (seconds)', 'omni-performance-hardening' ), '' ),
-				'heartbeat_list'    => array( 'int', __( 'List screen Heartbeat interval (seconds)', 'omni-performance-hardening' ), '' ),
+				'heartbeat_edit'    => array( 'int', __( 'Editor Heartbeat interval (seconds)', 'omni-performance-hardening' ), __( 'How often the editor checks for autosaves and post locks. Higher means fewer admin-ajax calls; clamped to 15-300', 'omni-performance-hardening' ) ),
+				'heartbeat_list'    => array( 'int', __( 'List screen Heartbeat interval (seconds)', 'omni-performance-hardening' ), __( 'Polling interval on post list screens; clamped to 15-300', 'omni-performance-hardening' ) ),
 			),
 		);
 	}
