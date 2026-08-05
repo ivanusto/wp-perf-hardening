@@ -90,13 +90,15 @@ define( 'PH_DISABLE_OEMBED_ROUTES', false );
 | `PH_SEARCH_MIN_LEN` | `2` | 關鍵字最短長度（以 `mb_strlen` 計） |
 | `PH_SEARCH_MAX_LEN` | `40` | 關鍵字最長長度 |
 | `PH_SEARCH_MAX_WORDS` | `4` | 空白分隔詞數上限，`0` 停用 |
-| `PH_SEARCH_MAX_PAGES` | `3` | 搜尋結果頁數上限，`0` 停用 |
+| `PH_SEARCH_MAX_PAGES` | `10` | 搜尋結果頁數上限，`0` 停用 |
 | `PH_SEARCH_PER_PAGE` | `10` | 每頁筆數 |
-| `PH_SEARCH_TITLE_ONLY` | `true` | 只比對標題與摘要（需 WP 6.2+） |
+| `PH_SEARCH_TITLE_ONLY` | `false` | 只比對標題與摘要（需 WP 6.2+）。**開啟後搜尋不到只出現在內文的關鍵字** |
 | `PH_SEARCH_LATIN_MAX` | `20` | 非中日韓長字串的垃圾判定門檻，`0` 停用 |
 | `PH_SEARCH_NO_FOUND_ROWS` | `false` | 搜尋查詢略過總筆數計算。**開啟會使搜尋分頁連結消失**（見下方說明） |
 
-`PH_SEARCH_TITLE_ONLY` 是效能與涵蓋率的取捨。中文新聞站的關鍵字多半出現在標題，開啟後掃描成本大幅下降；若使用者反映搜尋不到內文關鍵字，設為 `false` 即可，其餘防護不受影響。
+`PH_SEARCH_TITLE_ONLY` 是效能與涵蓋率的取捨，自 1.9.0 起預設為 `false`（涵蓋率優先）。設為 `true` 時掃描成本大幅下降——中文新聞站的關鍵字多半出現在標題——但只寫在內文的詞一律搜尋不到，使用者搜得到什麼會取決於編輯有沒有把該詞放進標題。維持 `false` 則搜尋回到對 `post_content` 做 `LIKE '%關鍵字%'`，亦即本外掛原本要收斂的全表掃描，文章數多的站台請觀察 DB 負載。垃圾關鍵字過濾、`post_type` / `post_status` 限縮等其餘防護不受此設定影響，兩種取捨下都持續生效。
+
+需要「內文也搜得到、又不要全表掃描」者，正解是改用專用搜尋索引（Relevanssi、Elasticsearch 等）；本外掛只能壓低原生 `LIKE` 搜尋的成本，無法讓它同時又快又完整。
 
 `PH_SEARCH_NO_FOUND_ROWS` 自 1.8.0 起為獨立設定並預設關閉（處理方式同 1.6.0 的 `PH_SECONDARY_NO_FOUND_ROWS`）。1.8.0 之前搜尋防護會無條件套用 `no_found_rows`，`found_posts` 與 `max_num_pages` 因此為 `0`，佈景主題不輸出分頁連結，原本上百頁的搜尋看起來只剩一頁。搜尋不像標籤頁有現成的 term count 可便宜還原總頁數，省下這筆計算就只能捨棄分頁，故交由站台自行取捨。另外注意 `PH_SEARCH_MAX_PAGES`（預設 `3`）仍會讓超過上限的分頁回空結果，需要更深的搜尋分頁請一併調高或設為 `0`。
 

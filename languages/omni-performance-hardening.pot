@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Omni Performance Hardening 1.8.0\n"
+"Project-Id-Version: Omni Performance Hardening 1.9.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/omni-performance-hardening\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -199,7 +199,7 @@ msgid "Match titles and excerpts only"
 msgstr ""
 
 #: omni-performance-hardening.php:716
-msgid "Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content"
+msgid "Requires WP 6.2+. Cuts the cost of a search sharply, but keywords that appear only in the body of a post will no longer be found. Off by default since 1.9.0 — turn it on if search load is a real problem on your site and your visitors search for words that are in the titles"
 msgstr ""
 
 #: omni-performance-hardening.php:717

@@ -3,7 +3,7 @@
  * Plugin Name:  Omni Performance Hardening
  * Plugin URI:   https://github.com/ivanusto/omni-wp-perf-hardening
  * Description:  Tames the most expensive WordPress endpoints: search table scans, archive SQL_CALC_FOUND_ROWS, low-value feeds, oEmbed and XML-RPC, with CDN-friendly cache headers.
- * Version:      1.8.0
+ * Version:      1.9.0
  * Requires PHP: 7.4
  * Requires at least: 5.9
  * Author:       ivanusto
@@ -35,7 +35,7 @@ if ( defined( 'PH_LOADED' ) ) {
 define( 'PH_LOADED', true );
 
 // 用於偵測版本升級，以便重建 rewrite rules；與 PH_* 設定常數無關。
-define( 'OMNI_PERFORMANCE_HARDENING_VERSION', '1.8.0' );
+define( 'OMNI_PERFORMANCE_HARDENING_VERSION', '1.9.0' );
 
 // 載入翻譯：源語言為英文，languages/ 內附 zh_TW。
 // mu-plugin 模式需將 languages/ 一併放入 mu-plugins/。
@@ -93,9 +93,11 @@ function omni_performance_hardening_defaults() {
 		'search_min_len'          => 2,
 		'search_max_len'          => 40,
 		'search_max_words'        => 4,
-		'search_max_pages'        => 3,
+		'search_max_pages'        => 10,
 		'search_per_page'         => 10,
-		'search_title_only'       => true,
+		// 不搜內文會讓使用者找不到只出現在內容裡的關鍵字，故預設關閉；
+		// 搜尋負載真的成為問題時再開啟。
+		'search_title_only'       => false,
 		'search_latin_max'        => 20,
 		// 會使 found_posts 為 0，佈景主題的搜尋分頁連結隨之消失，故預設關閉。
 		'search_no_found_rows'    => false,
@@ -713,7 +715,7 @@ if ( is_admin() ) {
 				'search_max_words'  => array( 'int', __( 'Word count limit', 'omni-performance-hardening' ), __( 'Whitespace-separated words; 0 disables', 'omni-performance-hardening' ) ),
 				'search_max_pages'  => array( 'int', __( 'Result pages limit', 'omni-performance-hardening' ), __( '0 disables', 'omni-performance-hardening' ) ),
 				'search_per_page'   => array( 'int', __( 'Results per page', 'omni-performance-hardening' ), __( 'Search results page only; archives have their own setting below. Minimum 1', 'omni-performance-hardening' ) ),
-				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'omni-performance-hardening' ), __( 'Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content', 'omni-performance-hardening' ) ),
+				'search_title_only' => array( 'bool', __( 'Match titles and excerpts only', 'omni-performance-hardening' ), __( 'Requires WP 6.2+. Cuts the cost of a search sharply, but keywords that appear only in the body of a post will no longer be found. Off by default since 1.9.0 — turn it on if search load is a real problem on your site and your visitors search for words that are in the titles', 'omni-performance-hardening' ) ),
 				'search_latin_max'  => array( 'int', __( 'Non-CJK long string threshold', 'omni-performance-hardening' ), __( 'Strings longer than this without CJK characters are treated as junk probes; 0 disables', 'omni-performance-hardening' ) ),
 				'search_no_found_rows' => array( 'bool', __( 'Skip result count on search', 'omni-performance-hardening' ), __( 'Skips counting how many posts match the search. Counting them is expensive — the database has to scan every match just to reach a total — but themes need that total to work out how many pages of results exist. Without it no pagination links are drawn and results stop at page one. Off by default; before 1.8.0 it was always on. Turn it on only if visitors never page past the first screen of search results', 'omni-performance-hardening' ) ),
 			),

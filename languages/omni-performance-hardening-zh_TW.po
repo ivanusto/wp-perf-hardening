@@ -3,7 +3,7 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Omni Performance Hardening 1.8.0\n"
+"Project-Id-Version: Omni Performance Hardening 1.9.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/omni-performance-hardening\n"
 "Last-Translator: ivanusto\n"
 "Language-Team: Chinese (Taiwan)\n"
@@ -142,8 +142,8 @@ msgstr "僅適用搜尋結果頁；封存頁另有下方的設定。最小值 1"
 msgid "Match titles and excerpts only"
 msgstr "只比對標題與摘要"
 
-msgid "Requires WP 6.2+. Cuts scan cost sharply but misses keywords that appear only in post content"
-msgstr "需 WP 6.2+。大幅降低掃描成本，但會漏掉只出現在內文的關鍵字"
+msgid "Requires WP 6.2+. Cuts the cost of a search sharply, but keywords that appear only in the body of a post will no longer be found. Off by default since 1.9.0 — turn it on if search load is a real problem on your site and your visitors search for words that are in the titles"
+msgstr "需 WP 6.2+。大幅降低搜尋的成本，但只出現在文章內文的關鍵字將再也搜尋不到。1.9.0 起預設關閉——若搜尋負載在你的站上確實造成問題，且訪客搜尋的詞多半出現在標題，再開啟"
 
 msgid "Non-CJK long string threshold"
 msgstr "非中日韓長字串門檻"

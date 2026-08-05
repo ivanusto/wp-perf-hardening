@@ -4,7 +4,7 @@ Tags: performance, cache, search, feed, xml-rpc
 Requires at least: 5.9
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Tames expensive WordPress endpoints — search scans, archive queries, low-value
 
 Built for large, crawl-heavy content sites (news, media, aggregators) where bot traffic on dynamic endpoints eats database CPU and PHP-FPM workers.
 
-* **Search hardening** — filters junk search probes (length, word count, invalid UTF-8, long non-CJK strings), narrows the query to indexed columns, optionally matches titles/excerpts only (WP 6.2+). Skipping the result count on searches is a separate opt-in setting, since it hides search pagination.
+* **Search hardening** — filters junk search probes (length, word count, invalid UTF-8, long non-CJK strings) and narrows the query to indexed columns. Two sharper optimisations are opt-in, because each one costs you something visible: matching titles and excerpts only (WP 6.2+) stops finding keywords that live in post bodies, and skipping the result count hides search pagination.
 * **Archive slimming** — drops `SQL_CALC_FOUND_ROWS` on tag/author/date archives; tag archive pagination is restored from the stored term count at zero cost. The same optimisation for widget and page-builder queries is available as an opt-in setting.
 * **Endpoint cache headers** — correct `Cache-Control` / `X-Robots-Tag` for feeds, search, tag pages, author pages, deep pagination and 404s, so your CDN can absorb bot traffic.
 * **Feed policy** — three modes (cache / strict / off) for low-value feeds; author, search and comment feeds can return 410.
@@ -50,7 +50,7 @@ Turn off "Skip counts on widget queries". That setting drops the total-row count
 
 = Search results collapsed to a single page. =
 
-Update to 1.8.0 and leave "Skip result count on search" off. Earlier versions always dropped the total-row count on search queries, which set `found_posts` to 0 and hid the theme's pagination links. Note that the separate "Result pages limit" setting (default 3) still caps how deep visitors can page through results; set it to 0 to lift that cap.
+Update to 1.8.0 and leave "Skip result count on search" off. Earlier versions always dropped the total-row count on search queries, which set `found_posts` to 0 and hid the theme's pagination links. Note that the separate "Result pages limit" setting (10 from 1.9.0 on, 3 before that) still caps how deep visitors can page through results; set it to 0 to lift that cap.
 
 = Embeds of my own posts stopped showing. =
 
@@ -61,6 +61,13 @@ Turn off "Disable oEmbed endpoints and /embed/ routes". WordPress builds those e
 The frontend HTTP timeout cap excludes REST, AJAX, cron, WP-CLI and logged-in users, so this should be rare. If it happens, disable "Frontend external request throttle" or raise the timeout.
 
 == Changelog ==
+
+= 1.9.0 =
+* "Match titles and excerpts only" (`PH_SEARCH_TITLE_ONLY`) now defaults to off. Matching titles only made search results depend on whether an editor happened to put the word in the headline; keywords in the body were simply unfindable. Coverage now wins by default. Turning it on brings back the sharp reduction in scan cost — and the `LIKE '%keyword%'` scan over post content it avoids — so enable it if search load is a real problem on your site.
+* "Result pages limit" (`PH_SEARCH_MAX_PAGES`) now defaults to 10, up from 3. With pagination links visible again after 1.8.0, a 3-page cap meant visitors could see links to pages that return nothing. 0 removes the cap.
+* **Existing sites**: saving the settings screen once writes every field to the database, after which default changes no longer reach your site. To pick these up, untick "Match titles and excerpts only" and set "Result pages limit" to 10 yourself, or define the constants in `wp-config.php`. New installs get the new defaults directly.
+* Every field on the settings screen now carries a description. Six of them — both keyword length limits, results per page, archive posts per page and the two Heartbeat intervals — were bare number boxes with no explanation, and the limits applied on save (per-page minimum 1, Heartbeat clamped to 15-300) were invisible.
+* The three count-related settings are described in plain language instead of `SQL_CALC_FOUND_ROWS` and `found_posts`, which meant nothing to the person deciding whether to tick the box. The archive one also spells out that tag and taxonomy archives keep their pagination while author and date archives do not.
 
 = 1.8.0 =
 * Skipping the total-row count on search queries is now an opt-in setting ("Skip result count on search", `PH_SEARCH_NO_FOUND_ROWS`), off by default. It previously always applied while search hardening was on: `found_posts` stayed 0, themes drew no pagination links, and a search spanning a hundred pages looked like a single page. Same treatment as the 1.6.0 widget-query change.
