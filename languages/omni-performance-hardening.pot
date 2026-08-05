@@ -215,7 +215,7 @@ msgid "Skip result count on search"
 msgstr ""
 
 #: omni-performance-hardening.php:718
-msgid "Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site"
+msgid "Skips counting how many posts match the search. Counting them is expensive — the database has to scan every match just to reach a total — but themes need that total to work out how many pages of results exist. Without it no pagination links are drawn and results stop at page one. Off by default; before 1.8.0 it was always on. Turn it on only if visitors never page past the first screen of search results"
 msgstr ""
 
 #: omni-performance-hardening.php:719

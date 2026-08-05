@@ -154,8 +154,8 @@ msgstr "超過此長度且不含中日韓字元視為垃圾探測，0 停用"
 msgid "Skip result count on search"
 msgstr "搜尋查詢略過總筆數計算"
 
-msgid "Drops SQL_CALC_FOUND_ROWS on the search query. Off by default: it sets found_posts to 0, so themes draw no pagination links and every search looks like a single page of results — this was always on before 1.8.0. Enable it only when search pagination does not matter on your site"
-msgstr "搜尋查詢關閉 SQL_CALC_FOUND_ROWS。預設關閉：此設定會使 found_posts 為 0，佈景主題因此不輸出分頁連結，搜尋結果看起來只剩一頁——1.8.0 之前此行為固定開啟。僅在不需要搜尋分頁的站台開啟"
+msgid "Skips counting how many posts match the search. Counting them is expensive — the database has to scan every match just to reach a total — but themes need that total to work out how many pages of results exist. Without it no pagination links are drawn and results stop at page one. Off by default; before 1.8.0 it was always on. Turn it on only if visitors never page past the first screen of search results"
+msgstr "不去計算搜尋符合的文章總數。計算總數的代價很高——資料庫必須把每一筆符合的資料都掃過才數得出來——但佈景主題要靠這個總數才知道結果共有幾頁。少了它就不會出現分頁連結，搜尋結果停在第一頁。預設關閉；1.8.0 之前為固定開啟。僅在訪客不需要翻閱搜尋結果第二頁以後的站台開啟"
 
 msgid "Archives & feeds"
 msgstr "封存頁與 Feed"
