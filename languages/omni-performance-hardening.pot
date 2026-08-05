@@ -59,7 +59,7 @@ msgid "Archive query slimming"
 msgstr ""
 
 #: omni-performance-hardening.php:697
-msgid "Drop SQL_CALC_FOUND_ROWS on tag, author and date archives"
+msgid "Skips the same count on tag, taxonomy, author and date archives, and caps how many posts each page shows. Tag and taxonomy archives keep their pagination — the total is rebuilt from the post count WordPress already stores for every term — but author and date archives lose their page links"
 msgstr ""
 
 #: omni-performance-hardening.php:698
@@ -67,7 +67,7 @@ msgid "Skip counts on widget queries"
 msgstr ""
 
 #: omni-performance-hardening.php:698
-msgid "Drops SQL_CALC_FOUND_ROWS on sidebar, related-post and page-builder queries. Off by default: it sets found_posts to 0, and themes or page builders that read that value — Elementor post widgets, custom pagination — will render an empty list. Turn it on, then check that every post listing on your site still appears"
+msgid "Skips counting matches on queries that are not the page's main one — sidebar widgets, related posts, page-builder listings. Those lists rarely show a total, so the count is usually wasted work. But anything that reads it to decide whether to render will come up empty: Elementor post widgets in particular leave a blank where the list should be, with nothing on screen to explain why. Off by default. If you turn it on, walk through every page that shows a post list and confirm they all still appear"
 msgstr ""
 
 #: omni-performance-hardening.php:699

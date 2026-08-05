@@ -37,14 +37,14 @@ msgstr "過濾垃圾關鍵字並限縮查詢範圍"
 msgid "Archive query slimming"
 msgstr "封存頁查詢瘦身"
 
-msgid "Drop SQL_CALC_FOUND_ROWS on tag, author and date archives"
-msgstr "標籤／作者／日期封存頁關閉 SQL_CALC_FOUND_ROWS"
+msgid "Skips the same count on tag, taxonomy, author and date archives, and caps how many posts each page shows. Tag and taxonomy archives keep their pagination — the total is rebuilt from the post count WordPress already stores for every term — but author and date archives lose their page links"
+msgstr "對標籤、分類法、作者與日期封存頁略過同樣的計算，並限制每頁顯示的篇數。標籤與分類法封存頁的分頁不受影響——總頁數改用 WordPress 為每個 term 既有的文章數還原——但作者頁與日期封存頁的分頁連結會消失"
 
 msgid "Skip counts on widget queries"
 msgstr "次要查詢略過總筆數計算"
 
-msgid "Drops SQL_CALC_FOUND_ROWS on sidebar, related-post and page-builder queries. Off by default: it sets found_posts to 0, and themes or page builders that read that value — Elementor post widgets, custom pagination — will render an empty list. Turn it on, then check that every post listing on your site still appears"
-msgstr "側邊欄、相關文章與頁面建構器的查詢關閉 SQL_CALC_FOUND_ROWS。預設關閉：此設定會使 found_posts 為 0，若佈景主題或頁面建構器讀取該值（如 Elementor 的文章 widget、自訂分頁），清單會整個變成空白。開啟後請逐一確認站上每個文章清單仍正常顯示"
+msgid "Skips counting matches on queries that are not the page's main one — sidebar widgets, related posts, page-builder listings. Those lists rarely show a total, so the count is usually wasted work. But anything that reads it to decide whether to render will come up empty: Elementor post widgets in particular leave a blank where the list should be, with nothing on screen to explain why. Off by default. If you turn it on, walk through every page that shows a post list and confirm they all still appear"
+msgstr "對非頁面主要查詢的部分略過符合筆數的計算——側邊欄 widget、相關文章、頁面建構器的清單都屬於這類。這些清單很少顯示總筆數，計算等於白做。但凡是靠這個數字決定要不要輸出的工具都會變成空的：Elementor 的文章 widget 尤其明顯，清單該在的位置留下一片空白，畫面上沒有任何訊息說明原因。預設關閉。開啟後請把站上每個有文章清單的頁面都走過一遍，確認都還在"
 
 msgid "Cache & robots headers"
 msgstr "快取與 robots 標頭"
